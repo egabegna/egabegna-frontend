@@ -1,12 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { setupInterceptors } from './services/interceptors'
-import ProtectedRoute from './components/layout/ProtectedRoute'
+import { ProtectedRoute, PublicRoute } from './components/layout/ProtectedRoute'
 
-// Pages (stubs pour l'instant)
-import LoginPage      from './pages/LoginPage'
+import ConnexionPage   from './pages/ConnexionPage'
 import InscriptionPage from './pages/InscriptionPage'
-import DashboardPage  from './pages/DashboardPage'
+import DashboardPage   from './pages/DashboardPage'
 
 function AppRoutes() {
   const navigate = useNavigate()
@@ -18,8 +17,12 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Routes publiques */}
-      <Route path="/login"       element={<LoginPage />} />
-      <Route path="/inscription" element={<InscriptionPage />} />
+      <Route path="/connexion" element={
+        <PublicRoute><ConnexionPage /></PublicRoute>
+      } />
+      <Route path="/inscription" element={
+        <PublicRoute><InscriptionPage /></PublicRoute>
+      } />
 
       {/* Routes protégées */}
       <Route path="/dashboard" element={

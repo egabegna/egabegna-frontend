@@ -1,14 +1,14 @@
 import { Navigate } from 'react-router-dom'
 import authStore from '../../store/authStore'
 
-function ProtectedRoute({ children }) {
+export function ProtectedRoute({ children }) {
   const token = authStore.getAccessToken()
-
-  if (!token) {
-    return <Navigate to="/login" replace />
-  }
-
+  if (!token) return <Navigate to="/connexion" replace />
   return children
 }
 
-export default ProtectedRoute
+export function PublicRoute({ children }) {
+  const token = authStore.getAccessToken()
+  if (token) return <Navigate to="/dashboard" replace />
+  return children
+}
