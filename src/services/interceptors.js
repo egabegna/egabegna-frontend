@@ -11,11 +11,13 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
-// logout est injecté depuis AuthProvider
 export const setupInterceptors = (logout) => {
 
   api.interceptors.request.use(
     (config) => {
+      // Ne pas toucher les requêtes superadmin
+      if (config.url?.includes('/superadmin/')) return config
+
       const token = authStore.getAccessToken()
       if (token) config.headers.Authorization = `Bearer ${token}`
       return config
@@ -27,6 +29,11 @@ export const setupInterceptors = (logout) => {
     (response) => response,
     async (error) => {
       const original = error.config
+
+      // Ne pas intercepter les erreurs superadmin
+      if (original.url?.includes('/superadmin/')) {
+        return Promise.reject(error)
+      }
 
       if (error.response?.status !== 401 || original._retry) {
         return Promise.reject(error)
