@@ -1,32 +1,19 @@
 import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useAuthContext } from '../store/AuthContext'
 import api from '../services/api'
-import authStore from '../store/authStore'
 
 export const useAuth = () => {
-  const navigate = useNavigate()
+  const { setSession, logout } = useAuthContext()
 
   const inscription = useCallback(async (formData) => {
     const response = await api.post('/api/auth/inscription/', formData)
-    const { access, refresh, role, nom_boutique } = response.data
-
-    authStore.setTokens(access, refresh)
-    localStorage.setItem('role', role)
-    localStorage.setItem('nom_boutique', nom_boutique)
-
-    navigate('/dashboard')
-  }, [navigate])
+    setSession(response.data)
+  }, [setSession])
 
   const login = useCallback(async (formData) => {
     const response = await api.post('/api/auth/login/', formData)
-    const { access, refresh, role, nom_boutique } = response.data
+    setSession(response.data)
+  }, [setSession])
 
-    authStore.setTokens(access, refresh)
-    localStorage.setItem('role', role)
-    localStorage.setItem('nom_boutique', nom_boutique)
-
-    navigate('/dashboard')
-  }, [navigate])
-
-  return { inscription, login }
+  return { inscription, login, logout }
 }

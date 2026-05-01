@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import { AuthProvider, useAuthContext } from './store/AuthContext'
 import { setupInterceptors } from './services/interceptors'
 import { ProtectedRoute, PublicRoute } from './components/layout/ProtectedRoute'
 
@@ -8,30 +9,26 @@ import InscriptionPage from './pages/InscriptionPage'
 import DashboardPage   from './pages/DashboardPage'
 
 function AppRoutes() {
-  const navigate = useNavigate()
+  const { logout, isLoading } = useAuthContext()
 
   useEffect(() => {
-    setupInterceptors(navigate)
-  }, [navigate])
+    setupInterceptors(logout)
+  }, [logout])
+
+  // Attendre la vérification du token avant de rendre quoi que ce soit
+  if (isLoading) return null
 
   return (
     <Routes>
-      {/* Routes publiques */}
       <Route path="/connexion" element={
         <PublicRoute><ConnexionPage /></PublicRoute>
       } />
       <Route path="/inscription" element={
         <PublicRoute><InscriptionPage /></PublicRoute>
       } />
-
-      {/* Routes protégées */}
       <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <DashboardPage />
-        </ProtectedRoute>
+        <ProtectedRoute><DashboardPage /></ProtectedRoute>
       } />
-
-      {/* Redirect racine */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
@@ -40,7 +37,9 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   )
 }
