@@ -7,6 +7,8 @@ import { ProtectedRoute, PublicRoute } from './components/layout/ProtectedRoute'
 import ConnexionPage   from './pages/ConnexionPage'
 import InscriptionPage from './pages/InscriptionPage'
 import DashboardPage   from './pages/DashboardPage'
+import EmployesPage from './pages/EmployesPage'
+import InvitationPage from './pages/InvitationPage'
 
 import { SuperadminProvider } from './store/SuperadminContext'
 import SuperadminRoute from './components/layout/SuperadminRoute'
@@ -31,8 +33,10 @@ function AppRoutes() {
       <Route path="/inscription" element={<PublicRoute><InscriptionPage /></PublicRoute>} />
 
       {/* Routes protégées */}
+      <Route path="/invitation/:token" element={<InvitationPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-
+      <Route path="/employes" element={<ProtectedRoute><EmployesPage /></ProtectedRoute>} />
+      
       {/* Routes superadmin */}
       <Route path="/superadmin/login" element={<SuperadminLoginPage />} />
       <Route path="/superadmin/boutiques" element={
