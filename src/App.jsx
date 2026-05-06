@@ -9,6 +9,8 @@ import InscriptionPage from './pages/InscriptionPage'
 import DashboardPage   from './pages/DashboardPage'
 import EmployesPage from './pages/EmployesPage'
 import InvitationPage from './pages/InvitationPage'
+import ProduitsPage   from './pages/ProduitsPage'
+import CategoriesPage from './pages/CategoriesPage'
 
 import { SuperadminProvider } from './store/SuperadminContext'
 import SuperadminRoute from './components/layout/SuperadminRoute'
@@ -31,11 +33,14 @@ function AppRoutes() {
       {/* Routes publiques */}
       <Route path="/connexion"   element={<PublicRoute><ConnexionPage /></PublicRoute>} />
       <Route path="/inscription" element={<PublicRoute><InscriptionPage /></PublicRoute>} />
+      
 
       {/* Routes protégées */}
       <Route path="/invitation/:token" element={<InvitationPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/employes" element={<ProtectedRoute><EmployesPage /></ProtectedRoute>} />
+      <Route path="/produits"   element={<ProtectedRoute><ProduitsPage /></ProtectedRoute>} />
+      <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
       
       {/* Routes superadmin */}
       <Route path="/superadmin/login" element={<SuperadminLoginPage />} />
