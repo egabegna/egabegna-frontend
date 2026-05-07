@@ -11,6 +11,7 @@ import EmployesPage from './pages/EmployesPage'
 import InvitationPage from './pages/InvitationPage'
 import ProduitsPage   from './pages/ProduitsPage'
 import CategoriesPage from './pages/CategoriesPage'
+import VentesPage from './pages/VentesPage'
 
 import { SuperadminProvider } from './store/SuperadminContext'
 import SuperadminRoute from './components/layout/SuperadminRoute'
@@ -41,6 +42,7 @@ function AppRoutes() {
       <Route path="/employes" element={<ProtectedRoute><EmployesPage /></ProtectedRoute>} />
       <Route path="/produits"   element={<ProtectedRoute><ProduitsPage /></ProtectedRoute>} />
       <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
+      <Route path="/ventes" element={<ProtectedRoute><VentesPage /></ProtectedRoute>} />
       
       {/* Routes superadmin */}
       <Route path="/superadmin/login" element={<SuperadminLoginPage />} />
