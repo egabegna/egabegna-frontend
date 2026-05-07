@@ -12,6 +12,9 @@ import InvitationPage from './pages/InvitationPage'
 import ProduitsPage   from './pages/ProduitsPage'
 import CategoriesPage from './pages/CategoriesPage'
 import VentesPage from './pages/VentesPage'
+import FournisseursPage from './pages/FournisseursPage'
+import ReceptionsPage   from './pages/ReceptionsPage'
+import AmbulantPage     from './pages/AmbulantPage'
 
 import { SuperadminProvider } from './store/SuperadminContext'
 import SuperadminRoute from './components/layout/SuperadminRoute'
@@ -43,6 +46,9 @@ function AppRoutes() {
       <Route path="/produits"   element={<ProtectedRoute><ProduitsPage /></ProtectedRoute>} />
       <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
       <Route path="/ventes" element={<ProtectedRoute><VentesPage /></ProtectedRoute>} />
+      <Route path="/fournisseurs" element={<ProtectedRoute><FournisseursPage /></ProtectedRoute>} />
+      <Route path="/receptions"   element={<ProtectedRoute><ReceptionsPage /></ProtectedRoute>} />
+      <Route path="/ambulant"     element={<ProtectedRoute><AmbulantPage /></ProtectedRoute>} />
       
       {/* Routes superadmin */}
       <Route path="/superadmin/login" element={<SuperadminLoginPage />} />
