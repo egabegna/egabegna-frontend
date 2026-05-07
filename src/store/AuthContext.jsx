@@ -13,6 +13,8 @@ export function AuthProvider({ children }) {
     role:            localStorage.getItem('role')         || null,
     nom_boutique:    localStorage.getItem('nom_boutique') || null,
     is_superuser:    localStorage.getItem('is_superuser') === 'true',
+    devise:          localStorage.getItem('devise')       || 'XOF',
+    logo:            localStorage.getItem('logo')         || '',
     isAuthenticated: !!authStore.getAccessToken(),
     isLoading:       true,
   })
@@ -27,22 +29,28 @@ export function AuthProvider({ children }) {
   }, [])
 
   const setSession = useCallback((data) => {
-    const { access, refresh, role, nom_boutique, is_superuser = false } = data
+    const {
+        access, refresh, role, nom_boutique,
+        is_superuser = false,
+        devise = 'XOF',
+        logo   = '',
+    } = data   // ← il manquait cette extraction
 
     authStore.setTokens(access, refresh)
     localStorage.setItem('role',         role)
     localStorage.setItem('nom_boutique', nom_boutique)
     localStorage.setItem('is_superuser', String(is_superuser))
+    localStorage.setItem('devise',       devise)
+    localStorage.setItem('logo',         logo)
 
     setAuth({
-      role,
-      nom_boutique,
-      is_superuser,
-      isAuthenticated: true,
-      isLoading:       false,
-      user:            null,
+        role, nom_boutique, is_superuser,
+        devise, logo,
+        isAuthenticated: true,
+        isLoading:       false,
+        user:            null,
     })
-  }, [])
+}, [])
 
   const logout = useCallback(async () => {
     const refresh = authStore.getRefreshToken()
