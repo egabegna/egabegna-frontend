@@ -15,6 +15,9 @@ import VentesPage from './pages/VentesPage'
 import FournisseursPage from './pages/FournisseursPage'
 import ReceptionsPage   from './pages/ReceptionsPage'
 import AmbulantPage     from './pages/AmbulantPage'
+import FinancesPage     from './pages/FinancesPage'
+import SignalementsPage from './pages/SignalementsPage'
+import RapportsPage     from './pages/RapportsPage'
 
 import { SuperadminProvider } from './store/SuperadminContext'
 import SuperadminRoute from './components/layout/SuperadminRoute'
@@ -41,7 +44,6 @@ function AppRoutes() {
 
       {/* Routes protégées */}
       <Route path="/invitation/:token" element={<InvitationPage />} />
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/employes" element={<ProtectedRoute><EmployesPage /></ProtectedRoute>} />
       <Route path="/produits"   element={<ProtectedRoute><ProduitsPage /></ProtectedRoute>} />
       <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
@@ -49,6 +51,10 @@ function AppRoutes() {
       <Route path="/fournisseurs" element={<ProtectedRoute><FournisseursPage /></ProtectedRoute>} />
       <Route path="/receptions"   element={<ProtectedRoute><ReceptionsPage /></ProtectedRoute>} />
       <Route path="/ambulant"     element={<ProtectedRoute><AmbulantPage /></ProtectedRoute>} />
+      <Route path="/dashboard"     element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/finances"      element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
+      <Route path="/signalements"  element={<ProtectedRoute><SignalementsPage /></ProtectedRoute>} />
+      <Route path="/rapports"      element={<ProtectedRoute><RapportsPage /></ProtectedRoute>} />
       
       {/* Routes superadmin */}
       <Route path="/superadmin/login" element={<SuperadminLoginPage />} />
