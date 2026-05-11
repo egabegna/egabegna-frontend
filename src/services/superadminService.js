@@ -11,6 +11,7 @@ const superadminService = {
     api.post('/api/auth/token/', { username, password }),
   getBoutiques: () => api.get('/superadmin/boutiques/', saHeaders()),
   getStats:     () => api.get('/superadmin/stats/', saHeaders()),
+  getStatsGlobales: (params={}) => api.get('/superadmin/stats/globales/', { ...saHeaders(), params }),  // ← ajouter
   getBoutique:  (id) => api.get(`/superadmin/boutiques/${id}/`, saHeaders()),
   bloquer:      (id) => api.post(`/superadmin/boutiques/${id}/bloquer/`, {}, saHeaders()),
   debloquer:    (id) => api.post(`/superadmin/boutiques/${id}/debloquer/`, {}, saHeaders()),

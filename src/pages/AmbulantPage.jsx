@@ -4,32 +4,65 @@ import ambulantService from '../services/ambulantService'
 import employeService  from '../services/employeService'
 import produitService  from '../services/produitService'
 import StatutBadge     from '../components/shared/StatutBadge'
+import {
+  Play, Square, ArrowLeft, Plus, X,
+  Users, Clock, CheckCircle, TrendingUp, Coins,
+} from 'lucide-react'
+
+const NAVY    = '#1B2D5B'
+const GOLD    = '#C89A3C'
+const GREEN   = '#2D7A4F'
+const PURPLE  = '#5b21b6'
+const MUTED   = '#B0BEC5'
+const BORDER  = '#EAECEF'
+const BG      = '#F4F5F7'
+const WHITE   = '#FFFFFF'
+
+// ─── Hook responsive ──────────────────────────
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  )
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [breakpoint])
+  return isMobile
+}
+
+// ─── InfoItem ───────────────────────────────
+function InfoItem({ label, value }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{value}</div>
+    </div>
+  )
+}
 
 function AmbulantPage() {
-  const { role }                      = useAuthContext()
-  const [sessions, setSessions]       = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [view, setView]               = useState('liste') // liste | demarrer | cloturer
+  const { role }                          = useAuthContext()
+  const isMobile                          = useIsMobile()
+  const [sessions, setSessions]           = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [view, setView]                   = useState('liste')
   const [sessionActive, setSessionActive] = useState(null)
-  const [msg, setMsg]                 = useState({ type: '', text: '' })
+  const [msg, setMsg]                     = useState({ type: '', text: '' })
 
-  // Formulaire démarrage
-  const [employes, setEmployes]       = useState([])
-  const [produits, setProduits]       = useState([])
-  const [dForm, setDForm]             = useState({
-    employe_id: '', taux_commission: 0, note: ''
-  })
-  const [dProduits, setDProduits]     = useState([
-    { produit_id: '', qte_depart: 1 }
-  ])
+  const [employes, setEmployes]   = useState([])
+  const [produits, setProduits]   = useState([])
+  const [dForm, setDForm]         = useState({ employe_id: '', taux_commission: 0, note: '' })
+  const [dProduits, setDProduits] = useState([{ produit_id: '', qte_depart: 1 }])
   const [dSubmitting, setDSubmitting] = useState(false)
   const [dError, setDError]           = useState('')
 
-  // Formulaire clôture
-  const [retours, setRetours]         = useState([])
-  const [cNote, setCNote]             = useState('')
+  const [retours, setRetours]     = useState([])
+  const [cNote, setCNote]         = useState('')
   const [cSubmitting, setCSubmitting] = useState(false)
   const [cError, setCError]           = useState('')
+
+  const canManage = ['proprietaire', 'manager'].includes(role)
 
   const charger = useCallback(async () => {
     try {
@@ -41,22 +74,27 @@ function AmbulantPage() {
       setSessions(sRes.data)
       setEmployes(eRes.data.filter(e => e.role === 'ambulant'))
       setProduits(pRes.data)
-    } catch { setMsg({ type: 'error', text: 'Erreur de chargement.' }) }
-    finally  { setLoading(false) }
+    } catch {
+      setMsg({ type: 'error', text: 'Erreur de chargement.' })
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { charger() }, [charger])
 
-  // ── Démarrage ──────────────────────────────
-  const ajouterProduitD = () => {
-    setDProduits(p => [...p, { produit_id: '', qte_depart: 1 }])
-  }
+  useEffect(() => {
+    if (!msg.text) return
+    const t = setTimeout(() => setMsg({ type: '', text: '' }), 3500)
+    return () => clearTimeout(t)
+  }, [msg.text])
 
-  const modifierProduitD = (i, field, val) => {
-    setDProduits(p => p.map((item, idx) =>
-      idx === i ? { ...item, [field]: val } : item
-    ))
-  }
+  // ── Démarrage ──────────────────────────────
+  const ajouterProduitD = () =>
+    setDProduits(p => [...p, { produit_id: '', qte_depart: 1 }])
+
+  const modifierProduitD = (i, field, val) =>
+    setDProduits(p => p.map((item, idx) => idx === i ? { ...item, [field]: val } : item))
 
   const handleDemarrer = async e => {
     e.preventDefault()
@@ -80,9 +118,7 @@ function AmbulantPage() {
       await charger()
     } catch (err) {
       const d = err.response?.data
-      setDError(
-        Array.isArray(d?.detail) ? d.detail.join('\n') : d?.detail || 'Erreur.'
-      )
+      setDError(Array.isArray(d?.detail) ? d.detail.join('\n') : d?.detail || 'Erreur.')
     } finally { setDSubmitting(false) }
   }
 
@@ -97,16 +133,14 @@ function AmbulantPage() {
       qte_vendue:        s.qte_vendue,
       qte_disponible:    s.qte_disponible,
       prix_unitaire:     s.prix_unitaire,
-      qte_retour:        s.qte_disponible, // par défaut tout retourner
+      qte_retour:        s.qte_disponible,
     })))
     setView('cloturer')
   }
 
-  const modifierRetour = (i, val) => {
+  const modifierRetour = (i, val) =>
     setRetours(p => p.map((r, idx) => idx === i ? { ...r, qte_retour: Number(val) } : r))
-  }
 
-  // Commission prévisionnelle
   const commissionPrevisionnelle = sessionActive
     ? retours.reduce((acc, r) => {
         const vendu = r.qte_depart - r.qte_retour
@@ -135,298 +169,626 @@ function AmbulantPage() {
     } finally { setCSubmitting(false) }
   }
 
-  // ── RENDU ──────────────────────────────────
+  // ── VUE DÉMARRER ───────────────────────────
   if (view === 'demarrer') return (
-    <div style={as.page}>
-      <div style={as.backRow}>
-        <button onClick={() => setView('liste')} style={as.btnBack}>← Retour</button>
-        <h1 style={as.title}>Démarrer une session</h1>
+    <div style={{ ...s.page, padding: isMobile ? '16px 12px' : '32px 28px' }}>
+      <div style={{ ...s.header, marginBottom: isMobile ? 16 : 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
+          <button onClick={() => setView('liste')} style={s.btnBack}>
+            <ArrowLeft size={14} strokeWidth={2.5} /><span>Retour</span>
+          </button>
+          <div>
+            <p style={s.eyebrow}>Ambulant</p>
+            <h1 style={{ ...s.title, fontSize: isMobile ? 18 : 26 }}>Démarrer une session</h1>
+            <div style={s.titleUnderline} />
+          </div>
+        </div>
       </div>
 
-      <div style={as.formCard}>
-        <form onSubmit={handleDemarrer}>
+      <div style={{ ...s.formCard, padding: isMobile ? '14px 14px' : '20px 24px' }}>
+        <div style={s.formHeader}><span style={s.formTitle}>Informations de session</span></div>
+        <div style={s.formDivider} />
+        <form onSubmit={handleDemarrer} noValidate>
 
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <div style={{ flex: 1 }}>
-              <label style={as.label}>Employé ambulant *</label>
+          {/* Sur mobile, champs en colonne */}
+          <div style={{ ...s.row, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 0 : 12 }}>
+            <div style={s.fieldGroup}>
+              <label style={s.label}>Employé ambulant *</label>
               <select value={dForm.employe_id}
                 onChange={e => setDForm(p => ({ ...p, employe_id: e.target.value }))}
-                style={as.select}>
-                <option value="">— Choisir —</option>
+                style={{ ...s.select, width: '100%' }}>
+                <option value="">— Choisir un employé —</option>
                 {employes.map(e => (
                   <option key={e.id} value={e.id}>{e.nom_complet}</option>
                 ))}
               </select>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={as.label}>Taux commission (%)</label>
+            <div style={{ ...s.fieldGroup, flex: isMobile ? 'unset' : 1 }}>
+              <label style={s.label}>Taux commission (%)</label>
               <input type="number" min="0" max="100"
                 value={dForm.taux_commission}
                 onChange={e => setDForm(p => ({ ...p, taux_commission: e.target.value }))}
-                style={as.input} />
+                style={{ ...s.input, width: isMobile ? '100%' : undefined }} />
             </div>
           </div>
 
           {/* Produits */}
-          <div style={as.lignesHeader}>
-            <label style={as.label}>Produits à emporter</label>
-            <button type="button" onClick={ajouterProduitD} style={as.btnAdd}>+ Produit</button>
+          <div style={s.lignesHeader}>
+            <label style={s.label}>Produits à emporter</label>
+            <button type="button" onClick={ajouterProduitD} style={s.btnAdd}>
+              <Plus size={12} strokeWidth={2.5} /><span>Ajouter</span>
+            </button>
           </div>
 
-          {dProduits.map((item, i) => {
-            const produitInfo = produits.find(p => p.id === Number(item.produit_id))
-            return (
-              <div key={i} style={as.ligneRow}>
-                <select value={item.produit_id}
-                  onChange={e => modifierProduitD(i, 'produit_id', e.target.value)}
-                  style={{ ...as.select, flex: 2 }}>
-                  <option value="">— Produit —</option>
-                  {produits.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.nom} (stock: {p.stock})
-                    </option>
-                  ))}
-                </select>
-                <input type="number" min="1"
-                  max={produitInfo?.stock || 9999}
-                  value={item.qte_depart}
-                  onChange={e => modifierProduitD(i, 'qte_depart', e.target.value)}
-                  placeholder="Quantité"
-                  style={{ ...as.input, width: 100 }} />
-                {produitInfo && (
-                  <span style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap' }}>
-                    max: {produitInfo.stock}
-                  </span>
-                )}
-                <button type="button"
-                  onClick={() => setDProduits(p => p.filter((_, idx) => idx !== i))}
-                  style={as.btnRemove}
-                  disabled={dProduits.length === 1}>✕</button>
+          <div style={s.lignesContainer}>
+            {/* Header — masqué sur mobile */}
+            {!isMobile && (
+              <div style={s.ligneRowHeader}>
+                <span style={{ flex: 3, ...s.colLabel }}>Produit</span>
+                <span style={{ width: 110, ...s.colLabel }}>Quantité</span>
+                <span style={{ width: 100, ...s.colLabel }}>Stock max</span>
+                <span style={{ width: 32 }} />
               </div>
-            )
-          })}
+            )}
 
-          <div style={{ marginTop: 12 }}>
-            <label style={as.label}>Note</label>
+            {dProduits.map((item, i) => {
+              const info = produits.find(p => p.id === Number(item.produit_id))
+
+              if (isMobile) {
+                // Carte compacte sur mobile
+                return (
+                  <div key={i} style={{
+                    background: WHITE,
+                    borderRadius: 10,
+                    border: `1px solid ${BORDER}`,
+                    padding: '12px',
+                    marginBottom: 10,
+                    position: 'relative',
+                  }}>
+                    <button type="button"
+                      onClick={() => setDProduits(p => p.filter((_, idx) => idx !== i))}
+                      disabled={dProduits.length === 1}
+                      style={{
+                        ...s.btnRemove,
+                        opacity: dProduits.length === 1 ? 0.3 : 1,
+                        cursor: dProduits.length === 1 ? 'not-allowed' : 'pointer',
+                        position: 'absolute', top: 10, right: 10,
+                        width: 28, height: 28,
+                      }}>
+                      <X size={12} strokeWidth={2.5} />
+                    </button>
+
+                    <label style={{ ...s.label, marginBottom: 4 }}>Produit</label>
+                    <select value={item.produit_id}
+                      onChange={e => modifierProduitD(i, 'produit_id', e.target.value)}
+                      style={{ ...s.select, width: '100%', marginBottom: 10 }}>
+                      <option value="">— Choisir un produit —</option>
+                      {produits.map(p => (
+                        <option key={p.id} value={p.id}>{p.nom} (stock : {p.stock})</option>
+                      ))}
+                    </select>
+
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ ...s.label, marginBottom: 4 }}>Quantité</label>
+                        <input type="number" min="1"
+                          max={info?.stock || 9999}
+                          value={item.qte_depart}
+                          onChange={e => modifierProduitD(i, 'qte_depart', e.target.value)}
+                          style={{ ...s.input, textAlign: 'center' }}
+                        />
+                      </div>
+                      {info && (
+                        <div style={{ paddingTop: 18, fontSize: 12, color: GOLD, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          max : {info.stock}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              }
+
+              // Desktop row
+              return (
+                <div key={i} style={s.ligneRow}>
+                  <select value={item.produit_id}
+                    onChange={e => modifierProduitD(i, 'produit_id', e.target.value)}
+                    style={{ ...s.select, flex: 3 }}>
+                    <option value="">— Choisir un produit —</option>
+                    {produits.map(p => (
+                      <option key={p.id} value={p.id}>{p.nom} (stock : {p.stock})</option>
+                    ))}
+                  </select>
+                  <input type="number" min="1"
+                    max={info?.stock || 9999}
+                    value={item.qte_depart}
+                    onChange={e => modifierProduitD(i, 'qte_depart', e.target.value)}
+                    style={{ ...s.input, width: 110, textAlign: 'center' }}
+                  />
+                  <span style={{ width: 100, fontSize: 12, color: info ? GOLD : MUTED, fontWeight: 600 }}>
+                    {info ? `max : ${info.stock}` : '—'}
+                  </span>
+                  <button type="button"
+                    onClick={() => setDProduits(p => p.filter((_, idx) => idx !== i))}
+                    disabled={dProduits.length === 1}
+                    style={{ ...s.btnRemove, opacity: dProduits.length === 1 ? 0.3 : 1, cursor: dProduits.length === 1 ? 'not-allowed' : 'pointer' }}>
+                    <X size={13} strokeWidth={2.5} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={s.fieldGroup}>
+            <label style={s.label}>Note</label>
             <input value={dForm.note}
               onChange={e => setDForm(p => ({ ...p, note: e.target.value }))}
-              style={as.input} />
+              style={s.input} />
           </div>
 
-          {dError && <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8 }}>{dError}</p>}
+          {dError && (
+            <div style={{ color: '#c0392b', fontSize: 12, padding: '8px 12px', background: '#FEF1F1', borderRadius: 8, border: '1px solid #FBBCBC', marginBottom: 12 }}>
+              {dError}
+            </div>
+          )}
 
-          <button type="submit" disabled={dSubmitting} style={{ ...as.btnPrimary, marginTop: 16 }}>
-            {dSubmitting ? 'Démarrage...' : '▶ Démarrer la session'}
-          </button>
+          <div style={s.formActions}>
+            <button type="submit" disabled={dSubmitting}
+              style={{
+                ...s.btnPrimary,
+                width: isMobile ? '100%' : undefined,
+                justifyContent: isMobile ? 'center' : undefined,
+                opacity: dSubmitting ? 0.6 : 1,
+                cursor: dSubmitting ? 'not-allowed' : 'pointer',
+              }}>
+              <Play size={14} strokeWidth={2.5} />
+              <span>{dSubmitting ? 'Démarrage...' : 'Démarrer la session'}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>
   )
 
+  // ── VUE CLÔTURER ───────────────────────────
   if (view === 'cloturer' && sessionActive) return (
-    <div style={as.page}>
-      <div style={as.backRow}>
-        <button onClick={() => setView('liste')} style={as.btnBack}>← Retour</button>
-        <h1 style={as.title}>Clôturer session #{sessionActive.id}</h1>
+    <div style={{ ...s.page, padding: isMobile ? '16px 12px' : '32px 28px' }}>
+      <div style={{ ...s.header, marginBottom: isMobile ? 16 : 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
+          <button onClick={() => setView('liste')} style={s.btnBack}>
+            <ArrowLeft size={14} strokeWidth={2.5} /><span>Retour</span>
+          </button>
+          <div>
+            <p style={s.eyebrow}>Ambulant</p>
+            <h1 style={{ ...s.title, fontSize: isMobile ? 17 : 26 }}>
+              Clôturer la session {sessionActive.id}
+            </h1>
+            <div style={s.titleUnderline} />
+          </div>
+        </div>
       </div>
 
-      <div style={as.formCard}>
-        <div style={as.infoBox}>
+      <div style={{ ...s.formCard, padding: isMobile ? '14px 12px' : '20px 24px' }}>
+        {/* Info box — colonne sur mobile */}
+        <div style={{
+          ...s.infoBox,
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 12 : 32,
+        }}>
           <InfoItem label="Employé"    value={sessionActive.employe_nom} />
           <InfoItem label="Commission" value={`${sessionActive.taux_commission}%`} />
           <InfoItem label="Départ"     value={new Date(sessionActive.date_depart).toLocaleString('fr-FR')} />
         </div>
 
-        <form onSubmit={handleCloturer}>
-          <table style={as.table}>
-            <thead>
-              <tr style={as.thead}>
-                {['Produit', 'Emporté', 'Vendu', 'Disponible', 'Retour'].map(h => (
-                  <th key={h} style={as.th}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+        <div style={s.formHeader}><span style={s.formTitle}>Saisir les retours</span></div>
+        <div style={s.formDivider} />
+
+        <form onSubmit={handleCloturer} noValidate>
+          {isMobile ? (
+            /* ── Retours en cartes sur mobile ── */
+            <div style={{ marginBottom: 16 }}>
               {retours.map((r, i) => (
-                <tr key={r.stock_ambulant_id} style={as.tr}>
-                  <td style={as.td}>{r.produit_nom}</td>
-                  <td style={as.td}>{r.qte_depart}</td>
-                  <td style={as.td}>{r.qte_vendue}</td>
-                  <td style={as.td}>
-                    <span style={{
-                      color: r.qte_disponible > 0 ? '#d97706' : '#16a34a',
-                      fontWeight: 600,
-                    }}>
-                      {r.qte_disponible}
-                    </span>
-                  </td>
-                  <td style={as.td}>
-                    <input type="number" min="0"
-                      max={r.qte_disponible}
+                <div key={r.stock_ambulant_id} style={{
+                  background: i % 2 === 0 ? WHITE : '#FAFBFC',
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  marginBottom: 10,
+                }}>
+                  <div style={{ fontWeight: 700, color: NAVY, fontSize: 13, marginBottom: 10 }}>
+                    {r.produit_nom}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                    {[
+                      { label: 'Emporté',     val: r.qte_depart,     color: NAVY  },
+                      { label: 'Vendu',       val: r.qte_vendue,     color: r.qte_vendue > 0 ? GREEN : MUTED },
+                      { label: 'Disponible',  val: r.qte_disponible, color: r.qte_disponible > 0 ? GOLD : GREEN },
+                    ].map(({ label, val, color }) => (
+                      <div key={label} style={{
+                        background: BG,
+                        borderRadius: 8,
+                        padding: '6px 10px',
+                        textAlign: 'center',
+                        flex: 1,
+                        minWidth: 70,
+                      }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 3 }}>{label}</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label style={{ ...s.label, marginBottom: 0, whiteSpace: 'nowrap' }}>Retour</label>
+                    <input type="number" min="0" max={r.qte_disponible}
                       value={r.qte_retour}
                       onChange={e => modifierRetour(i, e.target.value)}
-                      style={{ ...as.input, width: 80 }} />
-                  </td>
-                </tr>
+                      style={{ ...s.input, width: 90, textAlign: 'center' }}
+                    />
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            /* ── Table desktop ── */
+            <div style={{ overflowX: 'auto' }}>
+              <table style={s.table}>
+                <thead>
+                  <tr>
+                    {['Produit', 'Emporté', 'Vendu', 'Disponible', 'Retour'].map(h => (
+                      <th key={h} style={s.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {retours.map((r, i) => (
+                    <tr key={r.stock_ambulant_id} style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}>
+                      <td style={{ ...s.td, fontWeight: 700, color: NAVY }}>{r.produit_nom}</td>
+                      <td style={s.td}>{r.qte_depart}</td>
+                      <td style={s.td}>
+                        <span style={{ fontWeight: 600, color: r.qte_vendue > 0 ? GREEN : MUTED }}>
+                          {r.qte_vendue}
+                        </span>
+                      </td>
+                      <td style={s.td}>
+                        <span style={{
+                          ...s.badge,
+                          background: r.qte_disponible > 0 ? '#FBF5E9' : '#EBF5EF',
+                          color: r.qte_disponible > 0 ? GOLD : GREEN,
+                        }}>
+                          {r.qte_disponible}
+                        </span>
+                      </td>
+                      <td style={s.td}>
+                        <input type="number" min="0" max={r.qte_disponible}
+                          value={r.qte_retour}
+                          onChange={e => modifierRetour(i, e.target.value)}
+                          style={{ ...s.input, width: 80, textAlign: 'center' }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-          {/* Récap commission */}
-          <div style={as.commissionBox}>
-            <div style={as.commissionTitle}>Récapitulatif commission</div>
-            <div style={as.commissionRow}>
-              <span>Taux appliqué</span>
-              <span>{sessionActive.taux_commission}%</span>
+          {/* Commission */}
+          <div style={s.commissionBox}>
+            <div style={s.commissionTitle}>
+              <Coins size={13} color={PURPLE} strokeWidth={2} />
+              Récapitulatif commission
             </div>
-            <div style={as.commissionRow}>
-              <span>CA vendu estimé</span>
-              <span>
-                {retours.reduce((acc, r) => {
-                  const vendu = r.qte_depart - r.qte_retour
-                  return acc + vendu * Number(r.prix_unitaire)
-                }, 0).toLocaleString()} FCFA
-              </span>
-            </div>
-            <div style={{ ...as.commissionRow, fontWeight: 700, fontSize: 16 }}>
-              <span>Commission à verser</span>
-              <span style={{ color: '#7c3aed' }}>
-                {commissionPrevisionnelle.toLocaleString(undefined, {
-                  maximumFractionDigits: 0
-                })} FCFA
-              </span>
-            </div>
+            {[
+              {
+                label: 'Taux appliqué',
+                val: `${sessionActive.taux_commission}%`,
+                bold: false,
+              },
+              {
+                label: 'CA vendu estimé',
+                val: `${retours.reduce((acc, r) => acc + (r.qte_depart - r.qte_retour) * Number(r.prix_unitaire), 0).toLocaleString()} FCFA`,
+                bold: false,
+              },
+              {
+                label: 'Commission à verser',
+                val: `${commissionPrevisionnelle.toLocaleString(undefined, { maximumFractionDigits: 0 })} FCFA`,
+                bold: true,
+              },
+            ].map(({ label, val, bold }) => (
+              <div key={label} style={s.commissionRow}>
+                <span style={{ fontSize: bold ? (isMobile ? 13 : 14) : (isMobile ? 12 : 13), fontWeight: bold ? 700 : 400, color: NAVY }}>{label}</span>
+                <span style={{ fontSize: bold ? (isMobile ? 14 : 16) : (isMobile ? 12 : 13), fontWeight: bold ? 800 : 600, color: bold ? PURPLE : NAVY }}>{val}</span>
+              </div>
+            ))}
           </div>
 
-          <div style={{ marginTop: 12 }}>
-            <label style={as.label}>Note de clôture</label>
-            <input value={cNote} onChange={e => setCNote(e.target.value)} style={as.input} />
+          <div style={{ ...s.fieldGroup, marginTop: 16 }}>
+            <label style={s.label}>Note de clôture</label>
+            <input value={cNote} onChange={e => setCNote(e.target.value)} style={s.input} />
           </div>
 
-          {cError && <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8 }}>{cError}</p>}
+          {cError && (
+            <div style={{ color: '#c0392b', fontSize: 12, padding: '8px 12px', background: '#FEF1F1', borderRadius: 8, border: '1px solid #FBBCBC', marginBottom: 12 }}>
+              {cError}
+            </div>
+          )}
 
-          <button type="submit" disabled={cSubmitting}
-            style={{ ...as.btnPrimary, backgroundColor: '#7c3aed', marginTop: 16 }}>
-            {cSubmitting ? 'Clôture...' : '■ Clôturer la session'}
-          </button>
+          <div style={s.formActions}>
+            <button type="submit" disabled={cSubmitting}
+              style={{
+                ...s.btnPrimary,
+                background: PURPLE,
+                width: isMobile ? '100%' : undefined,
+                justifyContent: isMobile ? 'center' : undefined,
+                opacity: cSubmitting ? 0.6 : 1,
+                cursor: cSubmitting ? 'not-allowed' : 'pointer',
+              }}>
+              <Square size={13} strokeWidth={2.5} />
+              <span>{cSubmitting ? 'Clôture en cours...' : 'Clôturer la session'}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>
   )
 
-  // Vue liste
+  // ── VUE LISTE ──────────────────────────────
+  const enCours   = sessions.filter(s => s.statut === 'en_cours')
+  const terminees = sessions.filter(s => s.statut === 'terminee')
+
   return (
-    <div style={as.page}>
-      <div style={as.header}>
+    <div style={{ ...s.page, padding: isMobile ? '16px 12px' : '32px 28px' }}>
+      <div style={{
+        ...s.header,
+        marginBottom: isMobile ? 16 : 24,
+        alignItems: isMobile ? 'flex-start' : 'flex-start',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? 14 : 0,
+      }}>
         <div>
-          <h1 style={as.title}>Mode Ambulant</h1>
-          <p style={as.sub}>{sessions.length} session(s)</p>
+          <p style={s.eyebrow}>Gestion</p>
+          <h1 style={{ ...s.title, fontSize: isMobile ? 22 : 26 }}>Mode Ambulant</h1>
+          <div style={s.titleUnderline} />
         </div>
-        {['proprietaire', 'manager'].includes(role) && (
-          <button onClick={() => setView('demarrer')} style={as.btnPrimary}>
-            ▶ Démarrer session
+        {canManage && (
+          <button onClick={() => setView('demarrer')} style={{
+            ...s.btnPrimary,
+            width: isMobile ? '100%' : undefined,
+            justifyContent: isMobile ? 'center' : undefined,
+          }}>
+            <Play size={15} strokeWidth={2.5} /><span>Démarrer une session</span>
           </button>
         )}
       </div>
 
+      {/* Stats — 2 colonnes sur mobile */}
+      <div style={{
+        ...s.statsRow,
+        flexWrap: 'wrap',
+        gap: isMobile ? 8 : 12,
+        marginBottom: isMobile ? 16 : 24,
+      }}>
+        {[
+          { label: 'Total sessions', val: sessions.length,    Icon: Users,       bg: '#EEF1F8', color: NAVY   },
+          { label: 'En cours',       val: enCours.length,     Icon: Clock,       bg: '#FBF5E9', color: GOLD   },
+          { label: 'Terminées',      val: terminees.length,   Icon: CheckCircle, bg: '#EBF5EF', color: GREEN  },
+          { label: 'CA total',
+            val: `${sessions.reduce((a, s) => a + Number(s.total_vendu || 0), 0).toLocaleString()} F`,
+            Icon: TrendingUp, bg: '#EEE9F8', color: PURPLE },
+        ].map(({ label, val, Icon, bg, color }) => (
+          <div key={label} style={{
+            ...s.statCard,
+            flex: isMobile ? '1 1 calc(50% - 4px)' : 1,
+            padding: isMobile ? '12px 14px' : '14px 18px',
+          }}>
+            <div style={{ ...s.statIcon, background: bg }}>
+              <Icon size={16} color={color} strokeWidth={1.8} />
+            </div>
+            <div>
+              <div style={{ ...s.statVal, fontSize: isMobile ? 17 : 20 }}>{val}</div>
+              <div style={{ ...s.statLabel, fontSize: isMobile ? 10 : 11 }}>{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {msg.text && (
-        <div style={msg.type === 'success' ? as.alertSuccess : as.alertError}>
+        <div style={msg.type === 'success' ? s.alertSuccess : s.alertError}>
           {msg.text}
         </div>
       )}
 
-      {loading ? <p style={as.loading}>Chargement...</p> : (
-        <div style={as.liste}>
-          {sessions.map(s => (
-            <div key={s.id} style={as.card}>
-              <div style={as.cardMain}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    Session #{s.id} — {s.employe_nom}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
-                    {new Date(s.date_depart).toLocaleString('fr-FR')}
-                    {s.taux_commission > 0 && ` · Commission ${s.taux_commission}%`}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                    {s.stocks?.map(stock => (
-                      <span key={stock.id} style={as.stockTag}>
-                        {stock.produit_nom} : {stock.qte_vendue}/{stock.qte_depart}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <StatutBadge statut={s.statut} />
-                  <div style={{ fontWeight: 700, marginTop: 8 }}>
-                    {Number(s.total_vendu).toLocaleString()} FCFA
-                  </div>
-                  {s.statut === 'terminee' && s.commission_totale > 0 && (
-                    <div style={{ color: '#7c3aed', fontSize: 13, fontWeight: 600 }}>
-                      Commission : {Number(s.commission_totale).toLocaleString()} FCFA
+      {/* Liste */}
+      {loading ? (
+        <p style={s.loading}>Chargement...</p>
+      ) : sessions.length === 0 ? (
+        <div style={s.tableCard}>
+          <div style={s.empty}>
+            <Users size={28} color={MUTED} strokeWidth={1.3} />
+            <p style={{ margin: '10px 0 0', color: MUTED, fontSize: 13 }}>Aucune session ambulant.</p>
+          </div>
+        </div>
+      ) : (
+        <div style={s.tableCard}>
+          <div style={s.liste}>
+            {sessions.map((sess, i) => (
+              <div key={sess.id}
+                style={{
+                  ...s.sessionCard,
+                  padding: isMobile ? '14px 12px' : '16px 20px',
+                  background: i % 2 === 0 ? WHITE : '#FAFBFC',
+                  borderBottom: i < sessions.length - 1 ? `1px solid ${BORDER}` : 'none',
+                }}
+                onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
+                onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
+              >
+                {isMobile ? (
+                  /* ── Carte mobile ── */
+                  <div>
+                    {/* Ligne 1 : badge id + statut */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{
+                        ...s.idBadge,
+                        background: sess.statut === 'en_cours' ? '#FBF5E9' : '#EBF5EF',
+                        color: sess.statut === 'en_cours' ? GOLD : GREEN,
+                      }}>
+                        #{sess.id}
+                      </div>
+                      <StatutBadge statut={sess.statut} />
                     </div>
-                  )}
-                  {s.statut === 'en_cours' && ['proprietaire', 'manager'].includes(role) && (
-                    <button onClick={() => ouvrirCloture(s)}
-                      style={{ ...as.btnCloturer, marginTop: 8 }}>
-                      ■ Clôturer
-                    </button>
-                  )}
-                </div>
+
+                    {/* Nom + date */}
+                    <div style={{ fontWeight: 700, color: NAVY, fontSize: 14, marginBottom: 2 }}>
+                      {sess.employe_nom}
+                    </div>
+                    <div style={{ fontSize: 11, color: MUTED, marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <span>{new Date(sess.date_depart).toLocaleString('fr-FR')}</span>
+                      {sess.taux_commission > 0 && (
+                        <><span>·</span><span>Commission {sess.taux_commission}%</span></>
+                      )}
+                    </div>
+
+                    {/* Stock tags */}
+                    {sess.stocks?.length > 0 && (
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+                        {sess.stocks.map(stock => (
+                          <span key={stock.id} style={s.stockTag}>
+                            {stock.produit_nom} : {stock.qte_vendue}/{stock.qte_depart}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Montants + bouton */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: NAVY, fontSize: 15 }}>
+                          {Number(sess.total_vendu).toLocaleString()} FCFA
+                        </div>
+                        {sess.statut === 'terminee' && sess.commission_totale > 0 && (
+                          <div style={{ color: PURPLE, fontSize: 11, fontWeight: 700, marginTop: 2 }}>
+                            Commission : {Number(sess.commission_totale).toLocaleString()} FCFA
+                          </div>
+                        )}
+                      </div>
+                      {sess.statut === 'en_cours' && canManage && (
+                        <button onClick={() => ouvrirCloture(sess)} style={s.btnCloturer}>
+                          <Square size={11} strokeWidth={2.5} /><span>Clôturer</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Ligne desktop ── */
+                  <div style={s.cardMain}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                      <div style={{
+                        ...s.idBadge,
+                        background: sess.statut === 'en_cours' ? '#FBF5E9' : '#EBF5EF',
+                        color: sess.statut === 'en_cours' ? GOLD : GREEN,
+                      }}>
+                        {sess.id}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>
+                          {sess.employe_nom}
+                        </div>
+                        <div style={{ fontSize: 11, color: MUTED, marginTop: 2, display: 'flex', gap: 8 }}>
+                          <span>{new Date(sess.date_depart).toLocaleString('fr-FR')}</span>
+                          {sess.taux_commission > 0 && (
+                            <><span>·</span><span>Commission {sess.taux_commission}%</span></>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                          {sess.stocks?.map(stock => (
+                            <span key={stock.id} style={s.stockTag}>
+                              {stock.produit_nom} : {stock.qte_vendue}/{stock.qte_depart}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ marginBottom: 8 }}>
+                        <StatutBadge statut={sess.statut} />
+                      </div>
+                      <div style={{ fontWeight: 800, color: NAVY, fontSize: 14 }}>
+                        {Number(sess.total_vendu).toLocaleString()} FCFA
+                      </div>
+                      {sess.statut === 'terminee' && sess.commission_totale > 0 && (
+                        <div style={{ color: PURPLE, fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+                          Commission : {Number(sess.commission_totale).toLocaleString()} FCFA
+                        </div>
+                      )}
+                      {sess.statut === 'en_cours' && canManage && (
+                        <button onClick={() => ouvrirCloture(sess)} style={{ ...s.btnCloturer, marginTop: 10 }}>
+                          <Square size={11} strokeWidth={2.5} /><span>Clôturer</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
-          {sessions.length === 0 && <p style={as.empty}>Aucune session.</p>}
+            ))}
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function InfoItem({ label, value }) {
-  return (
-    <div>
-      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase',
-                    letterSpacing: 1, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 600 }}>{value}</div>
-    </div>
-  )
-}
-
-const as = {
-  page:    { padding: '32px 24px', maxWidth: 1000, margin: '0 auto' },
-  header:  { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  backRow: { display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 },
-  title:   { fontSize: 24, fontWeight: 700, margin: 0 },
-  sub:     { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  alertSuccess: { backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 14 },
-  alertError:   { backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 14 },
-  formCard:  { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 },
-  label:     { display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 },
-  input:     { padding: '9px 12px', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' },
-  select:    { padding: '9px 12px', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: 14, backgroundColor: '#fff', boxSizing: 'border-box' },
-  lignesHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  ligneRow:  { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 },
-  btnAdd:    { backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
-  btnRemove: { backgroundColor: '#fef2f2', color: '#dc2626', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 14 },
-  btnPrimary: { backgroundColor: '#111827', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
-  btnBack:    { backgroundColor: '#f3f4f6', color: '#374151', border: 'none', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
-  btnCloturer:{ backgroundColor: '#ede9fe', color: '#7c3aed', border: '1px solid #c4b5fd', padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
-  infoBox:   { display: 'flex', gap: 32, backgroundColor: '#f9fafb', borderRadius: 8, padding: 16, marginBottom: 20 },
-  table:     { width: '100%', borderCollapse: 'collapse', marginBottom: 16 },
-  thead:     { backgroundColor: '#f9fafb' },
-  th:        { padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' },
-  tr:        { borderBottom: '1px solid #f3f4f6' },
-  td:        { padding: '10px 12px', fontSize: 14 },
-  commissionBox: { backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: 16, marginTop: 16 },
-  commissionTitle: { fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  commissionRow: { display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 8 },
-  liste:     { display: 'flex', flexDirection: 'column', gap: 12 },
-  card:      { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 20px' },
-  cardMain:  { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  stockTag:  { backgroundColor: '#f3f4f6', color: '#374151', padding: '2px 8px', borderRadius: 8, fontSize: 12 },
-  loading:   { color: '#9ca3af', textAlign: 'center', padding: 30 },
-  empty:     { textAlign: 'center', color: '#9ca3af', padding: 30 },
+const s = {
+  page:           { padding: '32px 28px', maxWidth: 1100, margin: '0 auto' },
+  header:         { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  eyebrow:        { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
+  title:          { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
+  titleUnderline: { width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
+  btnPrimary:     { display: 'flex', alignItems: 'center', gap: 8, background: NAVY, color: WHITE, border: 'none', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  btnSecondary:   { display: 'flex', alignItems: 'center', gap: 8, background: BG, color: NAVY, border: 'none', padding: '11px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer' },
+  btnBack:        { display: 'flex', alignItems: 'center', gap: 6, background: BG, color: NAVY, border: 'none', padding: '9px 16px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 },
+  btnCloturer:    { display: 'flex', alignItems: 'center', gap: 6, background: '#EEE9F8', color: PURPLE, border: `1px solid #C4B5FD`, padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700 },
+  statsRow:       { display: 'flex', gap: 12, marginBottom: 24 },
+  statCard:       { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1 },
+  statIcon:       { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statVal:        { fontSize: 20, fontWeight: 800, color: NAVY, lineHeight: 1 },
+  statLabel:      { fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 2 },
+  alertSuccess:   { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13, fontWeight: 500 },
+  alertError:     { background: '#FEF1F1', border: '1px solid #FBBCBC', color: '#c0392b', borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13 },
+  formCard:       { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24 },
+  formHeader:     { marginBottom: 14 },
+  formTitle:      { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
+  formDivider:    { height: 1, background: BORDER, marginBottom: 18 },
+  formActions:    { marginTop: 16 },
+  row:            { display: 'flex', gap: 12 },
+  fieldGroup:     { marginBottom: 16, flex: 1 },
+  label:          { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
+  input:          { padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE, width: '100%' },
+  select:         { padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', background: WHITE },
+  lignesHeader:   { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  lignesContainer:{ background: BG, borderRadius: 10, padding: '12px 14px', marginBottom: 16 },
+  ligneRowHeader: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${BORDER}` },
+  colLabel:       { fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1px' },
+  ligneRow:       { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 },
+  btnAdd:         { display: 'flex', alignItems: 'center', gap: 6, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5`, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700 },
+  btnRemove:      { display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF1F1', color: '#c0392b', border: 'none', padding: '8px', borderRadius: 8, width: 32, height: 32, flexShrink: 0 },
+  infoBox:        { display: 'flex', gap: 32, background: BG, borderRadius: 10, padding: '14px 18px', marginBottom: 20, border: `1px solid ${BORDER}` },
+  table:          { width: '100%', borderCollapse: 'collapse', marginBottom: 16 },
+  th:             { padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}` },
+  tr:             { borderBottom: `1px solid ${BG}`, transition: 'background 0.1s' },
+  td:             { padding: '11px 14px', fontSize: 13, verticalAlign: 'middle' },
+  badge:          { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 },
+  commissionBox:  { background: '#F5F0FF', border: '1px solid #DDD6FE', borderRadius: 12, padding: '16px 20px', marginBottom: 16 },
+  commissionTitle:{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, color: PURPLE, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 14 },
+  commissionRow:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid #EDE9FE` },
+  tableCard:      { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' },
+  liste:          { display: 'flex', flexDirection: 'column' },
+  sessionCard:    { padding: '16px 20px', transition: 'background 0.1s', cursor: 'default' },
+  cardMain:       { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  idBadge:        { padding: '3px 10px', borderRadius: 8, fontSize: 11, fontWeight: 800, flexShrink: 0, marginTop: 2 },
+  stockTag:       { background: BG, color: NAVY, border: `1px solid ${BORDER}`, padding: '2px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600 },
+  loading:        { color: MUTED, textAlign: 'center', padding: 48, fontSize: 13 },
+  empty:          { textAlign: 'center', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center' },
 }
 
 export default AmbulantPage

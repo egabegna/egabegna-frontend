@@ -3,6 +3,8 @@ import authStore from '../store/authStore'
 
 let isRefreshing = false
 let failedQueue  = []
+let interceptorsSetup = false   // ← ajouter cette ligne
+
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) =>

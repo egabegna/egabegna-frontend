@@ -1,246 +1,51 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuthContext } from '../store/AuthContext'
 import boutiqueService from '../services/boutiqueService'
+import {
+  Save, ImagePlus, X, Bell, BellOff, BellRing,
+  Store, Phone, MapPin, Coins, FlaskConical,
+} from 'lucide-react'
 
+// ─── Design tokens (identiques à EmployesPage) ────────────────────────────────
+const NAVY   = '#1B2D5B'
+const GOLD   = '#C89A3C'
+const GREEN  = '#2D7A4F'
+const MUTED  = '#B0BEC5'
+const BORDER = '#EAECEF'
+const BG     = '#F4F5F7'
+const WHITE  = '#FFFFFF'
+const RED    = '#c0392b'
+
+// ─── Devises ──────────────────────────────────────────────────────────────────
 const DEVISES = [
-  { value: 'XOF', label: 'Franc CFA — XOF' },
-  { value: 'EUR', label: 'Euro — EUR' },
-  { value: 'USD', label: 'Dollar — USD' },
-  { value: 'GNF', label: 'Franc Guinéen — GNF' },
-  { value: 'MAD', label: 'Dirham Marocain — MAD' },
+  { value: 'FCFA', label: 'Franc CFA',         sym: 'FCFA' },
+  { value: 'EUR', label: 'Euro',               sym: 'EUR' },
+  { value: 'USD', label: 'Dollar US',          sym: 'USD' },
+  { value: 'GNF', label: 'Franc Guinéen',      sym: 'GNF' },
+  { value: 'MAD', label: 'Dirham Marocain',    sym: 'MAD' },
 ]
 
-function ParametresPage() {
-  const { nom_boutique, setSession, role } = useAuthContext()
-  const [form, setForm]         = useState({
-    nom: '', adresse: '', telephone: '', devise: 'XOF'
-  })
-  const [logo, setLogo]         = useState(null)   // base64 preview
-  const [logoBase64, setLogoBase64] = useState('')
-  const [loading, setLoading]   = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [msg, setMsg]           = useState({ type: '', text: '' })
-  const [logoError, setLogoError] = useState('')
-  const fileRef                 = useRef(null)
-
-  useEffect(() => {
-    boutiqueService.get().then(res => {
-      const b = res.data
-      setForm({
-        nom:       b.nom       || '',
-        adresse:   b.adresse   || '',
-        telephone: b.telephone || '',
-        devise:    b.devise    || 'XOF',
-      })
-      if (b.logo_url) setLogo(b.logo_url)
-    }).catch(() => {})
-    .finally(() => setLoading(false))
-  }, [])
-
-  const handleChange = e => {
-    setForm(p => ({ ...p, [e.target.name]: e.target.value }))
-  }
-
-  // ── Upload logo ──────────────────────────────
-  const handleLogoChange = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setLogoError('')
-
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setLogoError('Format accepté : jpg, png, webp.')
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setLogoError('Image trop lourde (max 2MB).')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      setLogo(ev.target.result)
-      setLogoBase64(ev.target.result)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const retirerLogo = () => {
-    setLogo(null)
-    setLogoBase64('')
-    if (fileRef.current) fileRef.current.value = ''
-  }
-
-  // ── Soumission ───────────────────────────────
-  const handleSubmit = async e => {
-    e.preventDefault()
-    if (!form.nom.trim()) {
-      setMsg({ type: 'error', text: 'Le nom de la boutique est requis.' })
-      return
-    }
-    setSubmitting(true)
-    setMsg({ type: '', text: '' })
-
-    try {
-      const payload = { ...form }
-      if (logoBase64) payload.logo_base64 = logoBase64
-
-      const res = await boutiqueService.patch(payload)
-
-      // Mettre à jour le context
-      setSession({
-        access:       localStorage.getItem('access_token'),
-        refresh:      localStorage.getItem('refresh_token'),
-        role:         localStorage.getItem('role'),
-        nom_boutique: res.data.nom,
-        devise:       res.data.devise,
-        logo:         res.data.logo_url || '',
-      })
-
-      setMsg({ type: 'success', text: 'Paramètres enregistrés.' })
-      setLogoBase64('')
-    } catch (err) {
-      const d = err.response?.data
-      setMsg({
-        type: 'error',
-        text: d?.detail || d?.nom?.[0] || 'Erreur lors de la sauvegarde.'
-      })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  if (loading) return <div style={ps.page}><p style={ps.loading}>Chargement...</p></div>
-
+// ─── Champ formulaire ─────────────────────────────────────────────────────────
+function PField({ label, name, value, onChange, type = 'text', Icon }) {
   return (
-    <div style={ps.page}>
-      <h1 style={ps.title}>Paramètres boutique</h1>
-
-      {msg.text && (
-        <div style={msg.type === 'success' ? ps.alertSuccess : ps.alertError}>
-          {msg.text}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div style={ps.card}>
-
-          {/* Logo */}
-          <div style={ps.section}>
-            <div style={ps.sectionTitle}>Logo</div>
-            <div style={ps.logoZone}>
-              {logo ? (
-                <div style={ps.logoPreviewWrapper}>
-                  <img src={logo} alt="Logo boutique" style={ps.logoPreview} />
-                  <button type="button" onClick={retirerLogo} style={ps.btnRetirerLogo}>
-                    ✕ Retirer
-                  </button>
-                </div>
-              ) : (
-                <div
-                  style={ps.logoUpload}
-                  onClick={() => fileRef.current?.click()}
-                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#2563eb' }}
-                  onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db' }}
-                  onDrop={e => {
-                    e.preventDefault()
-                    e.currentTarget.style.borderColor = '#d1d5db'
-                    const file = e.dataTransfer.files[0]
-                    if (file) {
-                      const fakeEvent = { target: { files: [file] } }
-                      handleLogoChange(fakeEvent)
-                    }
-                  }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🖼️</div>
-                  <div style={{ fontSize: 14, color: '#6b7280' }}>
-                    Cliquez ou déposez votre logo ici
-                  </div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-                    JPG, PNG ou WebP · Max 2MB
-                  </div>
-                </div>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleLogoChange}
-                style={{ display: 'none' }}
-              />
-              {logoError && (
-                <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8 }}>
-                  {logoError}
-                </p>
-              )}
-            </div>
+    <div style={s.fieldGroup}>
+      <label style={s.label}>{label}</label>
+      <div style={{ position: 'relative' }}>
+        {Icon && (
+          <div style={s.inputIcon}>
+            <Icon size={13} color={MUTED} strokeWidth={1.8} />
           </div>
-
-          {/* Informations boutique */}
-          <div style={ps.section}>
-            <div style={ps.sectionTitle}>Informations</div>
-            <div style={ps.grid}>
-              <PField label="Nom de la boutique *" name="nom"
-                value={form.nom} onChange={handleChange} />
-              <PField label="Téléphone" name="telephone"
-                value={form.telephone} onChange={handleChange} type="tel" />
-            </div>
-            <PField label="Adresse" name="adresse"
-              value={form.adresse} onChange={handleChange} />
-          </div>
-
-          {/* Devise */}
-          <div style={ps.section}>
-            <div style={ps.sectionTitle}>Devise</div>
-            <div style={ps.deviseGrid}>
-              {DEVISES.map(d => (
-                <button
-                  key={d.value}
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, devise: d.value }))}
-                  style={{
-                    ...ps.deviseBtn,
-                    backgroundColor: form.devise === d.value ? '#111827' : '#f9fafb',
-                    color:           form.devise === d.value ? '#fff'    : '#374151',
-                    border:          form.devise === d.value
-                      ? '2px solid #111827'
-                      : '2px solid #e5e7eb',
-                  }}>
-                  <span style={ps.deviseSym}>{d.value}</span>
-                  <span style={ps.deviseNom}>{d.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              ...ps.btnSave,
-              opacity: submitting ? 0.7 : 1,
-              cursor:  submitting ? 'not-allowed' : 'pointer',
-            }}>
-            {submitting ? 'Enregistrement...' : '💾 Enregistrer les paramètres'}
-          </button>
-        </div>
-      </form>
-
-      {/* Section notifications push */}
-      <NotificationsPush />
+        )}
+        <input
+          name={name} type={type} value={value} onChange={onChange}
+          style={{ ...s.input, paddingLeft: Icon ? 36 : 12 }}
+        />
+      </div>
     </div>
   )
 }
 
-function PField({ label, name, value, onChange, type = 'text' }) {
-  return (
-    <div style={ps.fieldGroup}>
-      <label style={ps.label}>{label}</label>
-      <input name={name} type={type} value={value} onChange={onChange}
-        style={ps.input} />
-    </div>
-  )
-}
-
-// ── Section notifications push ────────────────
+// ─── Notifications push ───────────────────────────────────────────────────────
 function NotificationsPush() {
   const [permission, setPermission] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
@@ -258,101 +63,354 @@ function NotificationsPush() {
     try {
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready
-        await reg.showNotification('🔴 Test Egabégna', {
-          body:    'Ceci est une notification de test.',
-          icon:    '/icons/icon-192x192.png',
-          badge:   '/icons/icon-192x192.png',
-          data:    { url: '/signalements' },
+        await reg.showNotification('🔴 Test', {
+          body: 'Ceci est une notification de test.',
+          icon: '/icons/icon-192x192.png',
+          data: { url: '/signalements' },
           actions: [{ action: 'voir', title: 'Voir les signalements' }],
         })
       } else {
-        new Notification('🔴 Test Egabégna', {
-          body: 'Ceci est une notification de test.',
-        })
+        new Notification('Test', { body: 'Ceci est une notification de test.' })
       }
-    } catch (err) {
-      console.error('Erreur notification:', err)
-    } finally {
-      setTestLoading(false)
-    }
+    } catch (err) { console.error(err) }
+    finally { setTestLoading(false) }
   }
 
   const STATUTS = {
-    granted:     { label: 'Activées ✓',       color: '#16a34a', bg: '#dcfce7' },
-    denied:      { label: 'Bloquées ✗',        color: '#dc2626', bg: '#fee2e2' },
-    default:     { label: 'Non configurées',   color: '#d97706', bg: '#fef3c7' },
-    unsupported: { label: 'Non supportées',    color: '#6b7280', bg: '#f3f4f6' },
+    granted:     { label: 'Activées',        Icon: BellRing, bg: '#EBF5EF', color: GREEN },
+    denied:      { label: 'Bloquées',        Icon: BellOff,  bg: '#FEF1F1', color: RED   },
+    default:     { label: 'Non configurées', Icon: Bell,     bg: '#FBF5E9', color: GOLD  },
+    unsupported: { label: 'Non supportées',  Icon: BellOff,  bg: BG,        color: MUTED },
   }
-  const s = STATUTS[permission] || STATUTS.unsupported
+  const st = STATUTS[permission] || STATUTS.unsupported
+  const { Icon: StIcon } = st
 
   return (
-    <div style={ps.pushCard}>
-      <div style={ps.sectionTitle}>Notifications push</div>
-      <p style={ps.pushDesc}>
+    <div style={s.sectionCard}>
+      <div style={s.sectionHeader}>
+        <Bell size={14} color={NAVY} strokeWidth={2} />
+        <span style={s.sectionTitle}>Notifications push</span>
+      </div>
+      <div style={s.sectionDivider} />
+
+      <p style={s.pushDesc}>
         Recevez des alertes en temps réel pour les signalements critiques
         (rupture de stock, anomalie caisse) même si l'application est fermée.
       </p>
 
-      <div style={ps.pushStatus}>
-        <span style={{ ...ps.pushBadge, backgroundColor: s.bg, color: s.color }}>
-          {s.label}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ ...s.badge, background: st.bg, color: st.color, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <StIcon size={11} strokeWidth={2.5} />
+          {st.label}
         </span>
-      </div>
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
         {permission !== 'granted' && permission !== 'unsupported' && (
-          <button onClick={demanderPermission} style={ps.btnPush}>
-            🔔 Activer les notifications
+          <button onClick={demanderPermission} style={s.btnPrimary}>
+            <Bell size={13} strokeWidth={2.5} />
+            <span>Activer les notifications</span>
           </button>
         )}
 
         {permission === 'granted' && (
           <button onClick={testerNotification} disabled={testLoading}
-            style={ps.btnPushTest}>
-            {testLoading ? 'Envoi...' : '🧪 Tester une notification'}
+            style={{ ...s.btnAction, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5` }}>
+            <FlaskConical size={12} strokeWidth={2} />
+            <span>{testLoading ? 'Envoi...' : 'Tester une notification'}</span>
           </button>
         )}
 
         {permission === 'denied' && (
-          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>
-            Les notifications sont bloquées dans votre navigateur.
-            Allez dans les paramètres du navigateur pour les réactiver.
-          </p>
+          <span style={{ fontSize: 12, color: MUTED }}>
+            Réactivez les notifications dans les paramètres de votre navigateur.
+          </span>
         )}
       </div>
     </div>
   )
 }
 
-const ps = {
-  page:    { padding: '32px 24px', maxWidth: 700, margin: '0 auto' },
-  title:   { fontSize: 24, fontWeight: 700, marginBottom: 24 },
-  loading: { color: '#9ca3af', textAlign: 'center', padding: 60 },
-  alertSuccess: { backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 14 },
-  alertError:   { backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 14 },
-  card:    { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 28, marginBottom: 20 },
-  section: { marginBottom: 28 },
-  sectionTitle: { fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 },
-  grid:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 },
-  fieldGroup: { marginBottom: 14 },
-  label:   { display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 },
-  input:   { width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: 14, outline: 'none', boxSizing: 'border-box' },
-  logoZone:{ },
-  logoUpload: { border: '2px dashed #d1d5db', borderRadius: 10, padding: '32px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.2s' },
-  logoPreviewWrapper: { display: 'flex', alignItems: 'center', gap: 20 },
-  logoPreview: { width: 100, height: 100, objectFit: 'contain', borderRadius: 8, border: '1px solid #e5e7eb' },
-  btnRetirerLogo: { background: 'none', border: '1px solid #fecaca', color: '#dc2626', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
-  deviseGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 },
-  deviseBtn:  { padding: '12px', borderRadius: 10, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' },
-  deviseSym:  { display: 'block', fontSize: 16, fontWeight: 800, marginBottom: 4 },
-  deviseNom:  { display: 'block', fontSize: 11, opacity: 0.8 },
-  btnSave: { backgroundColor: '#111827', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 8, fontSize: 15, fontWeight: 700, width: '100%', transition: 'opacity 0.2s' },
-  pushCard: { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 },
-  pushDesc: { fontSize: 14, color: '#6b7280', lineHeight: 1.6, margin: '0 0 16px' },
-  pushStatus: { },
-  pushBadge: { display: 'inline-block', padding: '4px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600 },
-  btnPush:     { backgroundColor: '#111827', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
-  btnPushTest: { backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
+// ─── Page principale ──────────────────────────────────────────────────────────
+function ParametresPage() {
+  const { nom_boutique, role, setAuth } = useAuthContext()
+  const [form, setForm]           = useState({ nom: '', adresse: '', telephone: '', devise: 'XOF' })
+  const [logo, setLogo]           = useState(null)
+  const [logoBase64, setLogoBase64] = useState('')
+  const [loading, setLoading]     = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [msg, setMsg]             = useState({ type: '', text: '' })
+  const [logoError, setLogoError] = useState('')
+  const [dragging, setDragging]   = useState(false)
+  const fileRef                   = useRef(null)
+
+  useEffect(() => {
+    boutiqueService.get().then(res => {
+      const b = res.data
+      setForm({ nom: b.nom || '', adresse: b.adresse || '', telephone: b.telephone || '', devise: b.devise || 'XOF' })
+      if (b.logo_url) setLogo(b.logo_url)
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }))
+
+  const processFile = (file) => {
+    if (!file) return
+    setLogoError('')
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setLogoError('Format accepté : jpg, png, webp.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('Image trop lourde (max 2 MB).')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = ev => {
+      setLogo(ev.target.result)
+      setLogoBase64(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleLogoChange = e => processFile(e.target.files[0])
+
+  const retirerLogo = () => {
+    setLogo(null)
+    setLogoBase64('')
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+    if (!form.nom.trim()) {
+      setMsg({ type: 'error', text: 'Le nom de la boutique est requis.' })
+      return
+    }
+    setSubmitting(true)
+    setMsg({ type: '', text: '' })
+    try {
+      const payload = { ...form }
+      if (logoBase64) payload.logo_base64 = logoBase64
+      /*const res = await boutiqueService.patch(payload)
+      setSession({
+        access:       localStorage.getItem('access_token'),
+        refresh:      localStorage.getItem('refresh_token'),
+        role:         localStorage.getItem('role'),
+        nom_boutique: res.data.nom,
+        devise:       res.data.devise,
+        logo:         res.data.logo_url || '',
+      })*/
+      
+      const res = await boutiqueService.patch(payload)
+      // Mettre à jour uniquement les champs boutique dans le context
+      setAuth(prev => ({
+        ...prev,
+        nom_boutique: res.data.nom,
+        devise:       res.data.devise,
+        logo:         res.data.logo_url || '',
+      }))
+      localStorage.setItem('nom_boutique', res.data.nom)
+      localStorage.setItem('devise',       res.data.devise)
+      localStorage.setItem('logo',         res.data.logo_url || '')
+      setMsg({ type: 'success', text: 'Paramètres enregistrés avec succès.' })
+      setLogoBase64('')
+    } catch (err) {
+      const d = err.response?.data
+      setMsg({ type: 'error', text: d?.detail || d?.nom?.[0] || 'Erreur lors de la sauvegarde.' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) return <div style={s.page}><p style={s.loading}>Chargement...</p></div>
+
+  return (
+    <div style={s.page}>
+
+      {/* ── HEADER ── */}
+      <div style={s.header}>
+        <div>
+          <p style={s.eyebrow}>Configuration</p>
+          <h1 style={s.title}>Paramètres boutique</h1>
+          <div style={s.titleUnderline} />
+        </div>
+      </div>
+
+      {/* ── MESSAGES ── */}
+      {msg.text && (
+        <div style={msg.type === 'success' ? s.alertSuccess : s.alertError}>
+          {msg.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+
+        {/* ── LOGO ── */}
+        <div style={s.sectionCard}>
+          <div style={s.sectionHeader}>
+            <ImagePlus size={14} color={NAVY} strokeWidth={2} />
+            <span style={s.sectionTitle}>Logo de la boutique</span>
+          </div>
+          <div style={s.sectionDivider} />
+
+          {logo ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <img src={logo} alt="Logo boutique" style={s.logoPreview} />
+              <div>
+                <p style={{ fontSize: 13, color: MUTED, margin: '0 0 10px' }}>
+                  Logo actuel · JPG, PNG ou WebP · Max 2 MB
+                </p>
+                <button type="button" onClick={retirerLogo}
+                  style={{ ...s.btnAction, background: '#FEF1F1', color: RED, border: `1px solid #FBBCBC` }}>
+                  <X size={12} strokeWidth={2.5} />
+                  <span>Retirer le logo</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                ...s.logoUpload,
+                borderColor: dragging ? NAVY : BORDER,
+                background:  dragging ? '#EEF1F8' : BG,
+              }}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragging(true)  }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={e => {
+                e.preventDefault()
+                setDragging(false)
+                processFile(e.dataTransfer.files[0])
+              }}
+            >
+              <div style={s.logoUploadIcon}>
+                <ImagePlus size={22} color={MUTED} strokeWidth={1.5} />
+              </div>
+              <p style={{ margin: '8px 0 4px', fontSize: 13, color: NAVY, fontWeight: 600 }}>
+                Cliquez ou déposez votre logo ici
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: MUTED }}>
+                JPG, PNG ou WebP · Max 2 MB
+              </p>
+            </div>
+          )}
+
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
+            onChange={handleLogoChange} style={{ display: 'none' }} />
+
+          {logoError && (
+            <p style={{ color: RED, fontSize: 12, marginTop: 8 }}>{logoError}</p>
+          )}
+        </div>
+
+        {/* ── INFORMATIONS ── */}
+        <div style={s.sectionCard}>
+          <div style={s.sectionHeader}>
+            <Store size={14} color={NAVY} strokeWidth={2} />
+            <span style={s.sectionTitle}>Informations</span>
+          </div>
+          <div style={s.sectionDivider} />
+
+          <div style={s.row}>
+            <PField label="Nom de la boutique *" name="nom"       value={form.nom}       onChange={handleChange} Icon={Store}   />
+            <PField label="Téléphone"             name="telephone" value={form.telephone} onChange={handleChange} Icon={Phone} type="tel" />
+          </div>
+          <PField label="Adresse" name="adresse" value={form.adresse} onChange={handleChange} Icon={MapPin} />
+        </div>
+
+        {/* ── DEVISE ── */}
+        <div style={s.sectionCard}>
+          <div style={s.sectionHeader}>
+            <Coins size={14} color={NAVY} strokeWidth={2} />
+            <span style={s.sectionTitle}>Devise</span>
+          </div>
+          <div style={s.sectionDivider} />
+
+          <div style={s.deviseGrid}>
+            {DEVISES.map(d => {
+              const actif = form.devise === d.value
+              return (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, devise: d.value }))}
+                  style={{
+                    ...s.deviseBtn,
+                    background:   actif ? NAVY  : WHITE,
+                    color:        actif ? WHITE : NAVY,
+                    border:       actif ? `2px solid ${NAVY}` : `2px solid ${BORDER}`,
+                    boxShadow:    actif ? '0 2px 8px rgba(27,45,91,0.18)' : 'none',
+                  }}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 800, display: 'block', marginBottom: 4 }}>{d.sym}</span>
+                  <span style={{ fontSize: 11, opacity: 0.75 }}>{d.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── BOUTON SAVE ── */}
+        <button
+          type="submit"
+          disabled={submitting}
+          style={{
+            ...s.btnPrimary,
+            width: '100%',
+            justifyContent: 'center',
+            padding: '13px 28px',
+            fontSize: 14,
+            marginBottom: 20,
+            opacity: submitting ? 0.6 : 1,
+            cursor: submitting ? 'not-allowed' : 'pointer',
+          }}
+        >
+          <Save size={15} strokeWidth={2.5} />
+          <span>{submitting ? 'Enregistrement...' : 'Enregistrer les paramètres'}</span>
+        </button>
+      </form>
+
+      {/* ── NOTIFICATIONS ── */}
+      <NotificationsPush />
+    </div>
+  )
+}
+
+// ─── STYLES ───────────────────────────────────────────────────────────────────
+const s = {
+  page:    { padding: '32px 28px', maxWidth: 760, margin: '0 auto' },
+
+  header:        { marginBottom: 28 },
+  eyebrow:       { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
+  title:         { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
+  titleUnderline:{ width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
+
+  alertSuccess: { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 20, fontSize: 13, fontWeight: 500 },
+  alertError:   { background: '#FEF1F1', border: '1px solid #FBBCBC', color: RED,   borderRadius: 10, padding: '10px 16px', marginBottom: 20, fontSize: 13 },
+
+  sectionCard:   { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '20px 24px', marginBottom: 16 },
+  sectionHeader: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 },
+  sectionTitle:  { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
+  sectionDivider:{ height: 1, background: BORDER, marginBottom: 18 },
+
+  row:        { display: 'flex', gap: 14 },
+  fieldGroup: { marginBottom: 14, flex: 1 },
+  label:      { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
+  input:      { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE },
+  inputIcon:  { position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' },
+
+  logoUpload:     { border: `2px dashed ${BORDER}`, borderRadius: 12, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' },
+  logoUploadIcon: { width: 48, height: 48, background: BG, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' },
+  logoPreview:    { width: 90, height: 90, objectFit: 'contain', borderRadius: 10, border: `1px solid ${BORDER}` },
+
+  deviseGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 },
+  deviseBtn:  { padding: '12px 8px', borderRadius: 10, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' },
+
+  btnPrimary:{ display: 'flex', alignItems: 'center', gap: 8, background: NAVY, color: WHITE, border: 'none', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  btnAction: { display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none' },
+  badge:     { padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 },
+
+  pushDesc: { fontSize: 13, color: MUTED, lineHeight: 1.7, margin: '0 0 16px' },
+  loading:  { color: MUTED, textAlign: 'center', padding: 60, fontSize: 13 },
 }
 
 export default ParametresPage

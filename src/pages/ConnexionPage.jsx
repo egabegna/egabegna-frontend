@@ -1,12 +1,35 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react'
+import AuthBackground from '../components/shared/AuthBackground'
+
+const NAVY   = '#1B2D5B'
+const GOLD   = '#C89A3C'
+const MUTED  = '#B0BEC5'
+const BORDER = '#EAECEF'
+const WHITE  = '#FFFFFF'
+const RED    = '#c0392b'
 
 const INITIAL_FORM   = { email: '', mot_de_passe: '' }
 const INITIAL_ERRORS = { email: '', mot_de_passe: '', global: '' }
 
+// ─── Hook responsive ──────────────────────────
+function useIsMobile(breakpoint = 480) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  )
+  useState(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  })
+  return isMobile
+}
+
 function ConnexionPage() {
   const { login }             = useAuth()
+  const isMobile              = useIsMobile()
   const [form, setForm]       = useState(INITIAL_FORM)
   const [errors, setErrors]   = useState(INITIAL_ERRORS)
   const [loading, setLoading] = useState(false)
@@ -24,147 +47,121 @@ function ConnexionPage() {
     e.preventDefault()
     setLoading(true)
     setErrors(INITIAL_ERRORS)
-
     try {
-      await login({
-        email:        form.email.trim(),
-        mot_de_passe: form.mot_de_passe,
-      })
+      await login({ email: form.email.trim(), mot_de_passe: form.mot_de_passe })
     } catch (err) {
       const data = err.response?.data
-
-      // 401 générique — ne pas révéler si l'email existe
-      const message =
-        data?.detail ||
-        data?.non_field_errors?.[0] ||
-        'Email ou mot de passe incorrect.'
-
-      setErrors(prev => ({ ...prev, global: message }))
-    } finally {
-      setLoading(false)
-    }
+      setErrors(prev => ({ ...prev, global: data?.detail || data?.non_field_errors?.[0] || 'Email ou mot de passe incorrect.' }))
+    } finally { setLoading(false) }
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
+    <AuthBackground>
+      <div style={{
+        ...s.card,
+        // Sur mobile : bords arrondis réduits, padding réduit, pas de marge latérale
+        borderRadius:  isMobile ? 14 : 18,
+        padding:       isMobile ? '28px 20px' : '40px 36px',
+        // Pleine largeur avec petites marges latérales sur très petits écrans
+        width:         isMobile ? 'calc(100% - 32px)' : '100%',
+        maxWidth:      420,
+        // Ombre allégée sur mobile
+        boxShadow:     isMobile
+          ? '0 8px 32px rgba(0,0,0,0.18)'
+          : '0 20px 60px rgba(0,0,0,0.28)',
+      }}>
 
-        {/* Header */}
-        <div style={styles.header}>
-          <h1 style={styles.title}>Egabégna</h1>
-          <p style={styles.subtitle}>Connexion à votre boutique</p>
+        {/* Brand */}
+        <div style={{ ...s.brand, marginBottom: isMobile ? 22 : 28 }}>
+          <div style={{
+            ...s.brandIcon,
+            width:  isMobile ? 48 : 56,
+            height: isMobile ? 48 : 56,
+            marginBottom: isMobile ? 10 : 14,
+          }}>
+            <span style={{ ...s.brandLetter, fontSize: isMobile ? 22 : 26 }}>E</span>
+          </div>
+          <h1 style={{ ...s.title, fontSize: isMobile ? 20 : 24 }}>Egabégna</h1>
+          <div style={s.titleUnderline} />
+          <p style={{ ...s.subtitle, fontSize: isMobile ? 12 : 13 }}>
+            Connexion à votre boutique
+          </p>
         </div>
 
-        {/* Erreur globale */}
-        {errors.global && (
-          <div style={styles.alertError}>{errors.global}</div>
-        )}
+        {errors.global && <div style={s.alertError}>{errors.global}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
 
           {/* Email */}
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="votre@email.com"
-              style={styles.input}
-              autoComplete="email"
-            />
+          <div style={s.fieldGroup}>
+            <label style={s.label}>Email</label>
+            <div style={{ position: 'relative' }}>
+              <div style={s.inputIcon}><Mail size={13} color={MUTED} strokeWidth={1.8} /></div>
+              <input name="email" type="email" value={form.email} onChange={handleChange}
+                placeholder="votre@email.com" autoComplete="email"
+                // font-size ≥ 16px sur mobile pour éviter le zoom auto iOS
+                style={{ ...s.input, paddingLeft: 36, fontSize: isMobile ? 16 : 13 }} />
+            </div>
           </div>
 
           {/* Mot de passe */}
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Mot de passe</label>
-            <input
-              name="mot_de_passe"
-              type={showMdp ? 'text' : 'password'}
-              value={form.mot_de_passe}
-              onChange={handleChange}
-              placeholder="••••••••"
-              style={styles.input}
-              autoComplete="current-password"
-            />
+          <div style={s.fieldGroup}>
+            <label style={s.label}>Mot de passe</label>
+            <div style={{ position: 'relative' }}>
+              <div style={s.inputIcon}><Lock size={13} color={MUTED} strokeWidth={1.8} /></div>
+              <input name="mot_de_passe" type={showMdp ? 'text' : 'password'}
+                value={form.mot_de_passe} onChange={handleChange}
+                placeholder="••••••••" autoComplete="current-password"
+                style={{ ...s.input, paddingLeft: 36, paddingRight: 40, fontSize: isMobile ? 16 : 13 }} />
+              <button type="button" onClick={() => setShowMdp(v => !v)} style={s.eyeBtn} tabIndex={-1}>
+                {showMdp
+                  ? <EyeOff size={14} color={MUTED} strokeWidth={1.8} />
+                  : <Eye    size={14} color={MUTED} strokeWidth={1.8} />}
+              </button>
+            </div>
           </div>
 
-          {/* Toggle mdp */}
-          <label style={styles.showMdp}>
-            <input
-              type="checkbox"
-              checked={showMdp}
-              onChange={() => setShowMdp(v => !v)}
-            />
-            {' '}Afficher le mot de passe
-          </label>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading || !isFormValid()}
+          <button type="submit" disabled={loading || !isFormValid()}
             style={{
-              ...styles.btn,
-              opacity: (loading || !isFormValid()) ? 0.6 : 1,
-              cursor:  (loading || !isFormValid()) ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {loading ? 'Connexion...' : 'Se connecter'}
+              ...s.btnSubmit,
+              padding:   isMobile ? '14px' : '12px',
+              fontSize:  isMobile ? 15 : 14,
+              marginTop: isMobile ? 12 : 8,
+              opacity:   (loading || !isFormValid()) ? 0.55 : 1,
+              cursor:    (loading || !isFormValid()) ? 'not-allowed' : 'pointer',
+            }}>
+            {loading
+              ? 'Connexion...'
+              : <><LogIn size={15} strokeWidth={2.5} /><span>Se connecter</span></>}
           </button>
-
         </form>
 
-        <p style={styles.registerLink}>
+        <p style={{ ...s.foot, marginTop: isMobile ? 18 : 22, fontSize: isMobile ? 12 : 13 }}>
           Pas encore de compte ?{' '}
-          <Link to="/inscription">S'inscrire</Link>
+          <Link to="/inscription" style={s.link}>S'inscrire</Link>
         </p>
-
       </div>
-    </div>
+    </AuthBackground>
   )
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#f9fafb', padding: '24px 16px',
-  },
-  card: {
-    backgroundColor: '#fff', borderRadius: 12,
-    padding: '40px 36px', width: '100%', maxWidth: 420,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-  },
-  header:   { textAlign: 'center', marginBottom: 28 },
-  title:    { fontSize: 28, fontWeight: 700, margin: 0 },
-  subtitle: { color: '#6b7280', marginTop: 4 },
-  alertError: {
-    backgroundColor: '#fef2f2', border: '1px solid #fecaca',
-    color: '#dc2626', borderRadius: 8, padding: '10px 14px',
-    marginBottom: 16, fontSize: 14,
-  },
-  fieldGroup: { marginBottom: 16 },
-  label: { display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 },
-  input: {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1.5px solid #d1d5db', fontSize: 14,
-    outline: 'none', boxSizing: 'border-box',
-  },
-  showMdp: {
-    fontSize: 13, color: '#6b7280',
-    cursor: 'pointer', marginBottom: 20, display: 'block',
-  },
-  btn: {
-    width: '100%', padding: '12px', borderRadius: 8,
-    backgroundColor: '#111827', color: '#fff',
-    border: 'none', fontSize: 15, fontWeight: 600,
-    marginTop: 8, transition: 'opacity 0.2s',
-  },
-  registerLink: {
-    textAlign: 'center', marginTop: 20,
-    fontSize: 14, color: '#6b7280',
-  },
+const s = {
+  card:          { background: WHITE, borderRadius: 18, padding: '40px 36px', width: '100%', maxWidth: 420, border: `1px solid ${BORDER}`, boxShadow: '0 20px 60px rgba(0,0,0,0.28)' },
+  brand:         { textAlign: 'center', marginBottom: 28 },
+  brandIcon:     { width: 56, height: 56, background: NAVY, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 16px rgba(27,45,91,0.35)' },
+  brandLetter:   { fontSize: 26, fontWeight: 800, color: GOLD },
+  title:         { fontSize: 24, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
+  titleUnderline:{ width: 28, height: 3, background: GOLD, borderRadius: 2, margin: '8px auto 10px' },
+  subtitle:      { fontSize: 13, color: MUTED, margin: 0 },
+  alertError:    { background: '#FEF1F1', border: '1px solid #FBBCBC', color: RED, borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: 13 },
+  fieldGroup:    { marginBottom: 16 },
+  label:         { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
+  input:         { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, outline: 'none', boxSizing: 'border-box', background: WHITE },
+  inputIcon:     { position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' },
+  eyeBtn:        { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', borderRadius: 6 },
+  btnSubmit:     { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', borderRadius: 10, background: NAVY, color: WHITE, border: 'none', fontSize: 14, fontWeight: 700, marginTop: 8, transition: 'opacity 0.2s' },
+  foot:          { textAlign: 'center', marginTop: 22, fontSize: 13, color: MUTED },
+  link:          { color: NAVY, fontWeight: 700, textDecoration: 'none' },
 }
 
 export default ConnexionPage

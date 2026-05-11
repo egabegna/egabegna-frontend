@@ -63,9 +63,12 @@ export function AuthProvider({ children }) {
       // silencieux
     } finally {
       authStore.clearTokens()
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('role')
       localStorage.removeItem('nom_boutique')
       localStorage.removeItem('is_superuser')
+      localStorage.removeItem('devise')
+      localStorage.removeItem('logo')
 
       setAuth({
         user: null, role: null, nom_boutique: null,
@@ -77,7 +80,7 @@ export function AuthProvider({ children }) {
   }, [navigate])
 
   return (
-    <AuthContext.Provider value={{ ...auth, setSession, logout }}>
+    <AuthContext.Provider value={{ ...auth, setSession, logout, setAuth }}>
       {children}
     </AuthContext.Provider>
   )

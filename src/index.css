@@ -8,3 +8,26 @@ body {
   font-family: sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+Style global à ajouter dans index.css :
+@media (max-width: 768px) {
+  [data-sidebar-desktop] { display: none !important; }
+  [data-sidebar-burger] { display: flex !important; }
+  [data-sidebar-overlay] { display: block !important; }
+}
+
+/* Sidebar responsive */
+@media (max-width: 768px) {
+  aside[data-sidebar-desktop] {
+    display: none !important;
+  }
+  button[data-sidebar-burger] {
+    display: flex !important;
+  }
+  div[data-sidebar-overlay] {
+    display: block !important;
+  }
+  main {
+    margin-left: 0 !important;
+  }
+}

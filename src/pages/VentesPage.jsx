@@ -3,27 +3,54 @@ import { useAuthContext } from '../store/AuthContext'
 import { useDebounce }    from '../hooks/useDebounce'
 import venteService       from '../services/venteService'
 import produitService     from '../services/produitService'
+import {
+  Search,
+  X,
+  Minus,
+  Plus,
+  Banknote,
+  Smartphone,
+  ClipboardList,
+  CheckCircle,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Calendar,
+} from 'lucide-react'
 
-// ─── Constantes ───────────────────────────────
+const NAVY   = '#1B2D5B'
+const GOLD   = '#C89A3C'
+const GREEN  = '#2D7A4F'
+const MUTED  = '#B0BEC5'
+const BORDER = '#EAECEF'
+const BG     = '#F4F5F7'
+const WHITE  = '#FFFFFF'
+
+// Hauteur topbar définie dans AppLayout
+const TOPBAR_H = 68
+
 const MODES = [
-  { value: 'cash',         label: '💵 Cash'         },
-  { value: 'mobile_money', label: '📱 Mobile Money'  },
-  { value: 'credit',       label: '📋 Crédit'        },
+  { value: 'cash',         label: 'Cash',         Icon: Banknote     },
+  { value: 'mobile_money', label: 'Mobile Money',  Icon: Smartphone   },
+  { value: 'credit',       label: 'Crédit',        Icon: ClipboardList },
 ]
 
 // ─── Autocomplete produit ─────────────────────
 function AutocompleteProduit({ onSelect, boutiqueProduits }) {
-  const [query, setQuery]       = useState('')
-  const [open, setOpen]         = useState(false)
-  const debouncedQ              = useDebounce(query, 200)
-  const ref                     = useRef(null)
+  const [query, setQuery] = useState('')
+  const [open, setOpen]   = useState(false)
+  const debouncedQ        = useDebounce(query, 200)
+  const ref               = useRef(null)
 
   const resultats = boutiqueProduits.filter(p =>
     p.actif && p.nom.toLowerCase().includes(debouncedQ.toLowerCase())
   ).slice(0, 8)
 
   useEffect(() => {
-    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const handler = e => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -35,27 +62,35 @@ function AutocompleteProduit({ onSelect, boutiqueProduits }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', flex: 1 }}>
-      <input
-        value={query}
-        onChange={e => { setQuery(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
-        placeholder="🔍 Ajouter un produit..."
-        style={vs.searchInput}
-        autoComplete="off"
-      />
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div style={vs.searchWrap}>
+        <Search size={15} color={MUTED} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        <input
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          placeholder="Rechercher un produit..."
+          style={vs.searchInput}
+          autoComplete="off"
+        />
+      </div>
       {open && debouncedQ && resultats.length > 0 && (
         <div style={vs.dropdown}>
           {resultats.map(p => (
-            <div key={p.id} onClick={() => choisir(p)}
+            <div
+              key={p.id}
+              onClick={() => choisir(p)}
               style={vs.dropdownItem}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{p.nom}</div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>
-                {Number(p.prix_vente).toLocaleString()} FCFA
-                · Stock : {p.stock}
-                {p.stock === 0 && <span style={{ color: '#dc2626' }}> · RUPTURE</span>}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = BG}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = WHITE}
+            >
+              <div style={{ fontWeight: 600, fontSize: 13, color: NAVY }}>{p.nom}</div>
+              <div style={{ fontSize: 11, color: MUTED, marginTop: 2, display: 'flex', gap: 8 }}>
+                <span>{Number(p.prix_vente).toLocaleString()} FCFA</span>
+                <span>·</span>
+                <span style={{ color: p.stock === 0 ? '#c0392b' : MUTED }}>
+                  {p.stock === 0 ? 'Rupture' : `Stock : ${p.stock}`}
+                </span>
               </div>
             </div>
           ))}
@@ -63,7 +98,7 @@ function AutocompleteProduit({ onSelect, boutiqueProduits }) {
       )}
       {open && debouncedQ && resultats.length === 0 && (
         <div style={vs.dropdown}>
-          <div style={{ padding: '12px 16px', color: '#9ca3af', fontSize: 13 }}>
+          <div style={{ padding: '12px 16px', color: MUTED, fontSize: 13 }}>
             Aucun produit trouvé.
           </div>
         </div>
@@ -78,55 +113,62 @@ function LigneVenteRow({ ligne, onQteChange, onRemove }) {
 
   return (
     <div style={vs.ligneRow}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 14 }}>{ligne.produit.nom}</div>
-        <div style={{ fontSize: 12, color: '#6b7280' }}>
-          {Number(ligne.produit.prix_vente).toLocaleString()} FCFA / unité
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, color: NAVY, marginBottom: 2 }}>
+          {ligne.produit.nom}
+        </div>
+        <div style={{ fontSize: 11, color: MUTED, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>{Number(ligne.produit.prix_vente).toLocaleString()} FCFA / unité</span>
           {!stockOk && (
-            <span style={{ color: '#dc2626', marginLeft: 8 }}>
-              ⚠️ Stock insuffisant (dispo: {ligne.produit.stock})
-            </span>
+            <>
+              <span>·</span>
+              <span style={{ color: '#c0392b', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <AlertTriangle size={11} strokeWidth={2} />
+                Stock insuffisant ({ligne.produit.stock} dispo)
+              </span>
+            </>
           )}
         </div>
       </div>
 
-      {/* Contrôle quantité */}
       <div style={vs.qteControl}>
         <button
           onClick={() => onQteChange(ligne.produit.id, ligne.quantite - 1)}
           style={vs.qteBtn}
-          disabled={ligne.quantite <= 1}>
-          −
+          disabled={ligne.quantite <= 1}
+        >
+          <Minus size={13} strokeWidth={2} />
         </button>
         <span style={vs.qteVal}>{ligne.quantite}</span>
         <button
           onClick={() => onQteChange(ligne.produit.id, ligne.quantite + 1)}
-          style={vs.qteBtn}>
-          +
+          style={vs.qteBtn}
+        >
+          <Plus size={13} strokeWidth={2} />
         </button>
       </div>
 
-      {/* Sous-total */}
       <div style={vs.sousTotal}>
-        {(ligne.produit.prix_vente * ligne.quantite).toLocaleString()} FCFA
+        {(ligne.produit.prix_vente * ligne.quantite).toLocaleString()} F
       </div>
 
-      <button onClick={() => onRemove(ligne.produit.id)} style={vs.removeBtn}>✕</button>
+      <button onClick={() => onRemove(ligne.produit.id)} style={vs.removeBtn}>
+        <X size={14} strokeWidth={2} color="#c0392b" />
+      </button>
     </div>
   )
 }
 
 // ─── Formulaire nouvelle vente ────────────────
 function NouvelleVenteForm({ produits, onSuccess }) {
-  const [lignes, setLignes]           = useState([])
-  const [mode, setMode]               = useState('cash')
-  const [submitting, setSubmitting]   = useState(false)
-  const [error, setError]             = useState('')
+  const [lignes, setLignes]         = useState([])
+  const [mode, setMode]             = useState('cash')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError]           = useState('')
 
   const total = lignes.reduce(
     (acc, l) => acc + Number(l.produit.prix_vente) * l.quantite, 0
   )
-
   const stockInvalide = lignes.some(l => l.produit.stock < l.quantite)
 
   const ajouterProduit = (produit) => {
@@ -135,9 +177,7 @@ function NouvelleVenteForm({ produits, onSuccess }) {
       const existe = prev.find(l => l.produit.id === produit.id)
       if (existe) {
         return prev.map(l =>
-          l.produit.id === produit.id
-            ? { ...l, quantite: l.quantite + 1 }
-            : l
+          l.produit.id === produit.id ? { ...l, quantite: l.quantite + 1 } : l
         )
       }
       return [...prev, { produit, quantite: 1 }]
@@ -161,86 +201,95 @@ function NouvelleVenteForm({ produits, onSuccess }) {
 
     setSubmitting(true)
     setError('')
-
     try {
       await venteService.creer({
         mode_paiement: mode,
-        lignes: lignes.map(l => ({
-          produit_id: l.produit.id,
-          quantite:   l.quantite,
-        })),
+        lignes: lignes.map(l => ({ produit_id: l.produit.id, quantite: l.quantite })),
       })
       setLignes([])
       setMode('cash')
       onSuccess()
     } catch (err) {
       const detail = err.response?.data?.detail
-      setError(
-        Array.isArray(detail) ? detail.join('\n') : detail || 'Erreur lors de la vente.'
-      )
+      setError(Array.isArray(detail) ? detail.join('\n') : detail || 'Erreur lors de la vente.')
     } finally {
       setSubmitting(false)
     }
   }
 
+  const disabled = submitting || lignes.length === 0 || stockInvalide
+
   return (
     <div style={vs.formCard}>
-      <h2 style={vs.formTitle}>Nouvelle vente</h2>
 
-      {/* Étape 1 — Ajouter produits */}
-      <AutocompleteProduit
-        onSelect={ajouterProduit}
-        boutiqueProduits={produits}
-      />
+      {/* En-tête */}
+      <div style={vs.formHeader}>
+        <span style={vs.formEyebrow}>Nouvelle vente</span>
+        {lignes.length > 0 && (
+          <span style={vs.formBadge}>{lignes.length} article(s)</span>
+        )}
+      </div>
+      <div style={vs.formDivider} />
 
-      {/* Lignes */}
-      {lignes.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          {lignes.map(l => (
+      {/* Recherche */}
+      <div style={{ marginBottom: 16 }}>
+        <AutocompleteProduit onSelect={ajouterProduit} boutiqueProduits={produits} />
+      </div>
+
+      {/* Lignes produits */}
+      <div style={vs.lignesWrap}>
+        {lignes.length === 0 ? (
+          <div style={vs.vide}>Aucun produit ajouté.</div>
+        ) : (
+          lignes.map(l => (
             <LigneVenteRow
               key={l.produit.id}
               ligne={l}
               onQteChange={changerQte}
               onRemove={retirerLigne}
             />
-          ))}
-        </div>
-      )}
-
-      {lignes.length === 0 && (
-        <div style={vs.vide}>Aucun produit ajouté.</div>
-      )}
-
-      {/* Étape 2 — Mode paiement */}
-      <div style={vs.modeRow}>
-        {MODES.map(m => (
-          <button
-            key={m.value}
-            onClick={() => setMode(m.value)}
-            style={{
-              ...vs.modeBtn,
-              backgroundColor: mode === m.value ? '#111827' : '#f3f4f6',
-              color:           mode === m.value ? '#fff'    : '#374151',
-            }}>
-            {m.label}
-          </button>
-        ))}
+          ))
+        )}
       </div>
 
-      {/* Étape 3 — Total + soumettre */}
+      {/* Mode paiement */}
+      <div style={{ marginTop: 16 }}>
+        <div style={vs.modeLabel}>Mode de paiement</div>
+        <div style={vs.modeRow}>
+          {MODES.map(({ value, label, Icon }) => {
+            const actif = mode === value
+            return (
+              <button
+                key={value}
+                onClick={() => setMode(value)}
+                style={{
+                  ...vs.modeBtn,
+                  background:  actif ? NAVY : WHITE,
+                  color:       actif ? WHITE : '#6B7A99',
+                  border:      actif ? `1.5px solid ${NAVY}` : `1.5px solid ${BORDER}`,
+                }}
+              >
+                <Icon size={14} strokeWidth={1.8} color={actif ? GOLD : MUTED} />
+                <span>{label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Total */}
       <div style={vs.totalRow}>
-        <div style={vs.totalLabel}>
-          Total : <span style={vs.totalVal}>{total.toLocaleString()} FCFA</span>
+        <div>
+          <div style={vs.totalEyebrow}>Total</div>
+          <div style={vs.totalVal}>{total.toLocaleString()} FCFA</div>
         </div>
         <button
           onClick={handleSubmit}
-          disabled={submitting || lignes.length === 0 || stockInvalide}
-          style={{
-            ...vs.btnValider,
-            opacity: (submitting || lignes.length === 0 || stockInvalide) ? 0.6 : 1,
-            cursor:  (submitting || lignes.length === 0 || stockInvalide) ? 'not-allowed' : 'pointer',
-          }}>
-          {submitting ? 'Enregistrement...' : '✓ Valider la vente'}
+          disabled={disabled}
+          style={{ ...vs.btnValider, opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
+        >
+          <CheckCircle size={16} strokeWidth={2} />
+          <span>{submitting ? 'Enregistrement...' : 'Valider la vente'}</span>
         </button>
       </div>
 
@@ -270,73 +319,75 @@ function VenteDrawer({ vente, role, onClose, onAnnuler }) {
     }
   }
 
+  const validee = vente.statut === 'validee'
+
   return (
     <div style={dr.overlay} onClick={onClose}>
       <div style={dr.drawer} onClick={e => e.stopPropagation()}>
+
         <div style={dr.header}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17 }}>Vente #{vente.id}</h2>
-            <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 13 }}>
+            <div style={dr.drawerEyebrow}>Détail de vente</div>
+            <h2 style={dr.drawerTitle}>Vente {vente.id}</h2>
+            <div style={dr.drawerDate}>
               {new Date(vente.date).toLocaleString('fr-FR')}
-            </p>
+            </div>
           </div>
-          <button onClick={onClose} style={dr.closeBtn}>✕</button>
+          <button onClick={onClose} style={dr.closeBtn}>
+            <X size={18} color={MUTED} strokeWidth={2} />
+          </button>
         </div>
 
         <div style={dr.body}>
+
           {/* Infos */}
           <div style={dr.infoGrid}>
-            <InfoItem label="Employé"    value={vente.employe_nom} />
-            <InfoItem label="Paiement"   value={vente.mode_paiement} />
-            <InfoItem label="Statut"
-              value={
-                <span style={{
-                  ...dr.statutBadge,
-                  backgroundColor: vente.statut === 'validee' ? '#dcfce7' : '#fee2e2',
-                  color:           vente.statut === 'validee' ? '#16a34a' : '#dc2626',
-                }}>
-                  {vente.statut === 'validee' ? 'Validée' : 'Annulée'}
-                </span>
-              }
-            />
+            <InfoItem label="Employé"  value={vente.employe_nom} />
+            <InfoItem label="Paiement" value={vente.mode_paiement} />
+            <InfoItem label="Statut"   value={
+              <span style={{
+                ...dr.statutBadge,
+                background: validee ? '#EBF5EF' : '#FEF1F1',
+                color:      validee ? GREEN     : '#c0392b',
+              }}>
+                {validee ? 'Validée' : 'Annulée'}
+              </span>
+            } />
           </div>
 
-          {/* Lignes */}
-          <div style={dr.section}>
-            <div style={dr.sectionTitle}>Articles ({vente.nb_articles})</div>
-            {vente.lignes.map(l => (
-              <div key={l.id} style={dr.ligne}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{l.produit_nom}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>
-                    {Number(l.prix_unitaire).toLocaleString()} × {l.quantite}
-                  </div>
-                </div>
-                <div style={{ fontWeight: 600 }}>
-                  {Number(l.sous_total).toLocaleString()} FCFA
+          {/* Séparateur */}
+          <div style={{ height: 1, background: BORDER, margin: '16px 0' }} />
+
+          {/* Articles */}
+          <div style={dr.sectionTitle}>Articles ({vente.nb_articles})</div>
+          {vente.lignes.map(l => (
+            <div key={l.id} style={dr.ligne}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: NAVY }}>{l.produit_nom}</div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                  {Number(l.prix_unitaire).toLocaleString()} × {l.quantite}
                 </div>
               </div>
-            ))}
-          </div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: NAVY }}>
+                {Number(l.sous_total).toLocaleString()} FCFA
+              </div>
+            </div>
+          ))}
 
           {/* Total */}
           <div style={dr.totalRow}>
-            <span>Total</span>
-            <span style={dr.totalVal}>
-              {Number(vente.total).toLocaleString()} FCFA
-            </span>
+            <span style={{ fontSize: 13, color: MUTED, fontWeight: 600 }}>Total</span>
+            <span style={dr.totalVal}>{Number(vente.total).toLocaleString()} FCFA</span>
           </div>
 
           {/* Note */}
           {vente.note && (
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 12 }}>
-              Note : {vente.note}
-            </p>
+            <p style={{ fontSize: 12, color: MUTED, marginTop: 12 }}>Note : {vente.note}</p>
           )}
 
-          {/* Annulation — manager+ */}
-          {['proprietaire', 'manager'].includes(role) && vente.statut === 'validee' && (
-            <div style={{ marginTop: 20 }}>
+          {/* Annulation */}
+          {['proprietaire', 'manager'].includes(role) && validee && (
+            <div style={{ marginTop: 24 }}>
               {error && <div style={dr.alertError}>{error}</div>}
               {!confirm ? (
                 <button onClick={() => setConfirm(true)} style={dr.btnAnnuler}>
@@ -344,16 +395,15 @@ function VenteDrawer({ vente, role, onClose, onAnnuler }) {
                 </button>
               ) : (
                 <div style={dr.confirmBox}>
-                  <p style={{ margin: '0 0 12px', fontSize: 14 }}>
+                  <p style={{ margin: '0 0 12px', fontSize: 13, color: NAVY }}>
                     Confirmer l'annulation ? Le stock sera re-crédité.
                   </p>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={handleAnnuler} disabled={annulant}
-                      style={dr.btnConfirm}>
+                    <button onClick={handleAnnuler} disabled={annulant} style={dr.btnConfirm}>
                       {annulant ? '...' : 'Confirmer'}
                     </button>
                     <button onClick={() => setConfirm(false)} style={dr.btnCancel}>
-                      Annuler
+                      Retour
                     </button>
                   </div>
                 </div>
@@ -369,11 +419,355 @@ function VenteDrawer({ vente, role, onClose, onAnnuler }) {
 function InfoItem({ label, value }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase',
-                    letterSpacing: 1, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 500 }}>{value}</div>
+      <div style={{ fontSize: 10, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 4, fontWeight: 600 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: NAVY }}>{value}</div>
     </div>
   )
+}
+
+
+// ─── Select custom ────────────────────────────
+function CustomSelect({ name, value, onChange, options }) {
+  const [open, setOpen] = useState(false)
+  const ref             = useRef(null)
+
+  useEffect(() => {
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const selected = options.find(o => o.value === value) || options[0]
+
+  const handleSelect = (val) => {
+    onChange({ target: { name, value: val } })
+    setOpen(false)
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          ...cs.trigger,
+          borderColor: open ? NAVY : BORDER,
+        }}
+      >
+        <span style={{ flex: 1, textAlign: 'left', color: value ? NAVY : MUTED }}>
+          {selected?.label}
+        </span>
+        <ChevronDown
+          size={13} color={MUTED} strokeWidth={2}
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
+        />
+      </button>
+      {open && (
+        <div style={cs.dropdown}>
+          {options.map(o => (
+            <div
+              key={o.value}
+              onClick={() => handleSelect(o.value)}
+              style={{
+                ...cs.option,
+                background:  value === o.value ? '#EEF1F8' : WHITE,
+                color:       value === o.value ? NAVY : '#6B7A99',
+                fontWeight:  value === o.value ? 700 : 400,
+              }}
+              onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = BG }}
+              onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = WHITE }}
+            >
+              {value === o.value && (
+                <div style={cs.activeDot} />
+              )}
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const cs = {
+  trigger: {
+    display:      'flex',
+    alignItems:   'center',
+    gap:          8,
+    padding:      '7px 12px',
+    borderRadius: 9,
+    border:       `1.5px solid ${BORDER}`,
+    background:   WHITE,
+    cursor:       'pointer',
+    fontSize:     12,
+    fontWeight:   500,
+    minWidth:     130,
+    transition:   'border-color 0.15s',
+  },
+  dropdown: {
+    position:     'absolute',
+    top:          'calc(100% + 4px)',
+    left:         0,
+    minWidth:     '100%',
+    background:   WHITE,
+    border:       `1.5px solid ${BORDER}`,
+    borderRadius: 10,
+    boxShadow:    '0 8px 24px rgba(0,0,0,0.08)',
+    zIndex:       20,
+    overflow:     'hidden',
+  },
+  option: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        8,
+    padding:    '9px 14px',
+    fontSize:   12,
+    cursor:     'pointer',
+    transition: 'background 0.1s',
+  },
+  activeDot: {
+    width:        6,
+    height:       6,
+    borderRadius: '50%',
+    background:   GOLD,
+    flexShrink:   0,
+  },
+}
+
+// ─── Calendrier custom ────────────────────────
+const JOURS  = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+
+function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
+  const [open, setOpen]       = useState(false)
+  const [viewDate, setViewDate] = useState(() => value ? new Date(value) : new Date())
+  const ref                   = useRef(null)
+
+  useEffect(() => {
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const selected = value ? new Date(value) : null
+
+  const handleSelect = (date) => {
+    const iso = date.toISOString().split('T')[0]
+    onChange({ target: { name, value: iso } })
+    setOpen(false)
+  }
+
+  const handleClear = (e) => {
+    e.stopPropagation()
+    onChange({ target: { name, value: '' } })
+  }
+
+  const prevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+  const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+
+  // Générer les jours du mois
+  const firstDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
+  const lastDay  = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
+  // Lundi = 0
+  const startOffset = (firstDay.getDay() + 6) % 7
+  const cells = []
+  for (let i = 0; i < startOffset; i++) cells.push(null)
+  for (let d = 1; d <= lastDay.getDate(); d++) cells.push(d)
+
+  const today = new Date()
+  const isToday = (d) =>
+    d === today.getDate() &&
+    viewDate.getMonth() === today.getMonth() &&
+    viewDate.getFullYear() === today.getFullYear()
+
+  const isSelected = (d) =>
+    selected &&
+    d === selected.getDate() &&
+    viewDate.getMonth() === selected.getMonth() &&
+    viewDate.getFullYear() === selected.getFullYear()
+
+  const displayValue = selected
+    ? selected.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{ ...dp.trigger, borderColor: open ? NAVY : BORDER }}
+      >
+        <Calendar size={13} color={value ? NAVY : MUTED} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1, textAlign: 'left', color: value ? NAVY : MUTED, fontSize: 12, fontWeight: value ? 600 : 400 }}>
+          {displayValue || placeholder}
+        </span>
+        {value && (
+          <button onClick={handleClear} style={dp.clearBtn} type="button">
+            <X size={11} color={MUTED} strokeWidth={2.5} />
+          </button>
+        )}
+      </button>
+
+      {open && (
+        <div style={dp.calendar}>
+          {/* Header mois */}
+          <div style={dp.calHeader}>
+            <button onClick={prevMonth} style={dp.navBtn} type="button">
+              <ChevronLeft size={14} color={NAVY} strokeWidth={2} />
+            </button>
+            <span style={dp.monthLabel}>
+              {MOIS_FR[viewDate.getMonth()]} {viewDate.getFullYear()}
+            </span>
+            <button onClick={nextMonth} style={dp.navBtn} type="button">
+              <ChevronRight size={14} color={NAVY} strokeWidth={2} />
+            </button>
+          </div>
+
+          {/* Jours de la semaine */}
+          <div style={dp.weekRow}>
+            {JOURS.map(j => (
+              <div key={j} style={dp.weekDay}>{j}</div>
+            ))}
+          </div>
+
+          {/* Grille */}
+          <div style={dp.grid}>
+            {cells.map((d, i) => (
+              <div
+                key={i}
+                onClick={() => d && handleSelect(new Date(viewDate.getFullYear(), viewDate.getMonth(), d))}
+                style={{
+                  ...dp.cell,
+                  background:  d && isSelected(d) ? NAVY : d && isToday(d) ? '#EEF1F8' : 'transparent',
+                  color:       d && isSelected(d) ? WHITE : d && isToday(d) ? NAVY : d ? '#374151' : 'transparent',
+                  fontWeight:  d && (isSelected(d) || isToday(d)) ? 700 : 400,
+                  cursor:      d ? 'pointer' : 'default',
+                  borderRadius: 8,
+                }}
+                onMouseEnter={e => { if (d && !isSelected(d)) e.currentTarget.style.background = BG }}
+                onMouseLeave={e => { if (d && !isSelected(d)) e.currentTarget.style.background = isToday(d) ? '#EEF1F8' : 'transparent' }}
+              >
+                {d || ''}
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div style={dp.footer}>
+            <button
+              onClick={() => handleSelect(today)}
+              style={dp.todayBtn}
+              type="button"
+            >
+              Aujourd'hui
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const dp = {
+  trigger: {
+    display:      'flex',
+    alignItems:   'center',
+    gap:          7,
+    padding:      '7px 12px',
+    borderRadius: 9,
+    border:       `1.5px solid ${BORDER}`,
+    background:   WHITE,
+    cursor:       'pointer',
+    minWidth:     140,
+    transition:   'border-color 0.15s',
+  },
+  clearBtn: {
+    background: 'none',
+    border:     'none',
+    cursor:     'pointer',
+    padding:    0,
+    display:    'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  calendar: {
+    position:     'absolute',
+    top:          'calc(100% + 4px)',
+    left:         0,
+    background:   WHITE,
+    border:       `1.5px solid ${BORDER}`,
+    borderRadius: 14,
+    boxShadow:    '0 12px 40px rgba(0,0,0,0.10)',
+    zIndex:       20,
+    padding:      14,
+    width:        260,
+  },
+  calHeader: {
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+    marginBottom:   10,
+  },
+  monthLabel: {
+    fontSize:   13,
+    fontWeight: 700,
+    color:      NAVY,
+    letterSpacing: '0.3px',
+  },
+  navBtn: {
+    background:     'none',
+    border:         'none',
+    cursor:         'pointer',
+    padding:        4,
+    borderRadius:   6,
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  weekRow: {
+    display:             'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    marginBottom:        4,
+  },
+  weekDay: {
+    textAlign:     'center',
+    fontSize:      10,
+    fontWeight:    700,
+    color:         MUTED,
+    letterSpacing: '0.5px',
+    padding:       '4px 0',
+    textTransform: 'uppercase',
+  },
+  grid: {
+    display:             'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    gap:                 2,
+  },
+  cell: {
+    textAlign:      'center',
+    fontSize:       12,
+    padding:        '6px 2px',
+    transition:     'background 0.1s',
+    userSelect:     'none',
+  },
+  footer: {
+    marginTop:  10,
+    paddingTop: 8,
+    borderTop:  `1px solid ${BORDER}`,
+    textAlign:  'center',
+  },
+  todayBtn: {
+    background:  'none',
+    border:      'none',
+    cursor:      'pointer',
+    fontSize:    12,
+    color:       GOLD,
+    fontWeight:  700,
+    padding:     '4px 10px',
+    borderRadius: 6,
+  },
 }
 
 // ─── Historique des ventes ────────────────────
@@ -381,10 +775,11 @@ function HistoriqueVentes({ role, refreshKey }) {
   const [ventes, setVentes]       = useState([])
   const [loading, setLoading]     = useState(true)
   const [selected, setSelected]   = useState(null)
-  const [filtres, setFiltres]     = useState({ statut: '', mode_paiement: '', date_debut: '', date_fin: '' })
-  const [totalJour, setTotalJour] = useState(0)
-  const [page, setPage]           = useState(1)
-  const [hasNext, setHasNext]     = useState(false)
+  const [filtres, setFiltres]         = useState({ statut: '', mode_paiement: '', date_debut: '', date_fin: '' })
+  const [totalJour, setTotalJour]     = useState(0)
+  const [page, setPage]               = useState(1)
+  const [hasNext, setHasNext]         = useState(false)
+  const [searchEmploye, setSearchEmploye] = useState('')
 
   const charger = useCallback(async () => {
     setLoading(true)
@@ -395,14 +790,8 @@ function HistoriqueVentes({ role, refreshKey }) {
       setVentes(res.data.results || res.data)
       setHasNext(!!res.data.next)
 
-      // Total journalier
       const aujourd = new Date().toISOString().split('T')[0]
-      const resJour = await venteService.liste({
-        date_debut: aujourd,
-        date_fin:   aujourd,
-        statut:     'validee',
-        page_size:  100,
-      })
+      const resJour = await venteService.liste({ date_debut: aujourd, date_fin: aujourd, statut: 'validee', page_size: 100 })
       const ventesJour = resJour.data.results || resJour.data
       setTotalJour(ventesJour.reduce((acc, v) => acc + Number(v.total), 0))
     } catch { }
@@ -416,80 +805,122 @@ function HistoriqueVentes({ role, refreshKey }) {
     setPage(1)
   }
 
+  const ventesFiltrees = ventes.filter(v =>
+    !searchEmploye ||
+    v.employe_nom?.toLowerCase().includes(searchEmploye.toLowerCase())
+  )
+
   return (
     <div style={hs.wrapper}>
+
+      {/* En-tête */}
       <div style={hs.headerRow}>
-        <h2 style={hs.title}>Historique</h2>
+        <span style={hs.title}>Historique</span>
         <div style={hs.totalJour}>
-          CA aujourd'hui : <strong>{totalJour.toLocaleString()} FCFA</strong>
+          CA du jour · <strong>{totalJour.toLocaleString()} FCFA</strong>
         </div>
       </div>
 
       {/* Filtres */}
       <div style={hs.filtres}>
-        <select name="statut" value={filtres.statut}
-          onChange={handleFiltreChange} style={hs.select}>
-          <option value="">Tous statuts</option>
-          <option value="validee">Validée</option>
-          <option value="annulee">Annulée</option>
-        </select>
-        <select name="mode_paiement" value={filtres.mode_paiement}
-          onChange={handleFiltreChange} style={hs.select}>
-          <option value="">Tous modes</option>
-          <option value="cash">Cash</option>
-          <option value="mobile_money">Mobile Money</option>
-          <option value="credit">Crédit</option>
-        </select>
-        <input name="date_debut" type="date" value={filtres.date_debut}
-          onChange={handleFiltreChange} style={hs.dateInput} />
-        <input name="date_fin"   type="date" value={filtres.date_fin}
-          onChange={handleFiltreChange} style={hs.dateInput} />
+        <CustomSelect
+          name="statut"
+          value={filtres.statut}
+          onChange={handleFiltreChange}
+          options={[
+            { value: '', label: 'Tous statuts' },
+            { value: 'validee', label: 'Validée' },
+            { value: 'annulee', label: 'Annulée' },
+          ]}
+        />
+        <CustomSelect
+          name="mode_paiement"
+          value={filtres.mode_paiement}
+          onChange={handleFiltreChange}
+          options={[
+            { value: '', label: 'Tous modes' },
+            { value: 'cash', label: 'Cash' },
+            { value: 'mobile_money', label: 'Mobile Money' },
+            { value: 'credit', label: 'Crédit' },
+          ]}
+        />
+        <CustomDatePicker
+          name="date_debut"
+          value={filtres.date_debut}
+          onChange={handleFiltreChange}
+          placeholder="Date début"
+        />
+        <CustomDatePicker
+          name="date_fin"
+          value={filtres.date_fin}
+          onChange={handleFiltreChange}
+          placeholder="Date fin"
+        />
       </div>
 
-      {/* Liste */}
-      {loading ? (
-        <p style={{ color: '#9ca3af', textAlign: 'center', padding: 20 }}>Chargement...</p>
-      ) : ventes.length === 0 ? (
-        <p style={{ color: '#9ca3af', textAlign: 'center', padding: 20 }}>Aucune vente.</p>
-      ) : (
-        <>
-          {ventes.map(v => (
-            <div key={v.id}
+      {/* Recherche employé */}
+      <div style={hs.searchBar}>
+        <div style={hs.searchWrap}>
+          <Search size={14} color={MUTED} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+          <input
+            value={searchEmploye}
+            onChange={e => setSearchEmploye(e.target.value)}
+            placeholder="Rechercher par employé..."
+            style={hs.searchInput}
+          />
+          {searchEmploye && (
+            <button onClick={() => setSearchEmploye('')} style={hs.clearBtn}>
+              <X size={13} color={MUTED} strokeWidth={2} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Liste scrollable */}
+      <div style={hs.liste}>
+        {loading ? (
+          <p style={hs.empty}>Chargement...</p>
+        ) : ventesFiltrees.length === 0 ? (
+          <p style={hs.empty}>{searchEmploye ? 'Aucun résultat pour cet employé.' : 'Aucune vente.'}</p>
+        ) : (
+          ventesFiltrees.map(v => (
+            <div
+              key={v.id}
               onClick={() => setSelected(v)}
               style={hs.row}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
-                  Vente #{v.id}
-                  {v.statut === 'annulee' && (
-                    <span style={hs.annuleeBadge}>Annulée</span>
-                  )}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = BG}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = WHITE}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Vente {v.numero_boutique || v.id}
+                  {v.statut === 'annulee' && <span style={hs.annuleeBadge}>Annulée</span>}
                 </div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>
-                  {v.employe_nom} · {new Date(v.date).toLocaleString('fr-FR')}
-                  · {v.nb_articles} article(s) · {v.mode_paiement}
+                <div style={{ fontSize: 11, color: MUTED }}>
+                  {v.employe_nom} · {new Date(v.date).toLocaleString('fr-FR')} · {v.nb_articles} art. · {v.mode_paiement}
                 </div>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 15,
-                color: v.statut === 'annulee' ? '#9ca3af' : '#111827' }}>
-                {Number(v.total).toLocaleString()} FCFA
+              <div style={{ fontWeight: 800, fontSize: 14, color: v.statut === 'annulee' ? MUTED : NAVY, flexShrink: 0 }}>
+                {Number(v.total).toLocaleString()} F
               </div>
             </div>
-          ))}
+          ))
+        )}
+      </div>
 
-          {/* Pagination */}
-          <div style={hs.pagination}>
-            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-              style={hs.pageBtn}>← Précédent</button>
-            <span style={{ fontSize: 13, color: '#6b7280' }}>Page {page}</span>
-            <button disabled={!hasNext} onClick={() => setPage(p => p + 1)}
-              style={hs.pageBtn}>Suivant →</button>
-          </div>
-        </>
-      )}
+      {/* Pagination */}
+      <div style={hs.pagination}>
+        <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={hs.pageBtn}>
+          <ChevronLeft size={15} strokeWidth={2} />
+          <span>Précédent</span>
+        </button>
+        <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}>Page {page}</span>
+        <button disabled={!hasNext} onClick={() => setPage(p => p + 1)} style={hs.pageBtn}>
+          <span>Suivant</span>
+          <ChevronRight size={15} strokeWidth={2} />
+        </button>
+      </div>
 
-      {/* Drawer détail */}
       {selected && (
         <VenteDrawer
           vente={selected}
@@ -504,8 +935,8 @@ function HistoriqueVentes({ role, refreshKey }) {
 
 // ─── Page principale ──────────────────────────
 function VentesPage() {
-  const { role }          = useAuthContext()
-  const [produits, setProduits] = useState([])
+  const { role }              = useAuthContext()
+  const [produits, setProduits]   = useState([])
   const [refreshKey, setRefreshKey] = useState(0)
   const [successMsg, setSuccessMsg] = useState('')
 
@@ -516,10 +947,9 @@ function VentesPage() {
   }, [])
 
   const apresVente = () => {
-    setSuccessMsg('Vente enregistrée avec succès ! ✓')
+    setSuccessMsg('Vente enregistrée avec succès.')
     setRefreshKey(k => k + 1)
     setTimeout(() => setSuccessMsg(''), 3000)
-    // Rafraîchir le stock
     produitService.getProduits({ actif: 'true' })
       .then(r => setProduits(r.data))
       .catch(() => {})
@@ -527,94 +957,612 @@ function VentesPage() {
 
   return (
     <div style={vs.page}>
-      <h1 style={vs.pageTitle}>Ventes</h1>
 
       {successMsg && <div style={vs.alertSuccess}>{successMsg}</div>}
 
       <div style={vs.layout}>
-        {/* Colonne gauche — Formulaire */}
+
+        {/* ── COLONNE GAUCHE : formulaire sticky ── */}
         <div style={vs.colLeft}>
           <NouvelleVenteForm produits={produits} onSuccess={apresVente} />
         </div>
 
-        {/* Colonne droite — Historique */}
+        {/* ── COLONNE DROITE : historique scrollable ── */}
         <div style={vs.colRight}>
           <HistoriqueVentes role={role} refreshKey={refreshKey} />
         </div>
+
       </div>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// Styles
+// STYLES
 // ─────────────────────────────────────────────
+
 const vs = {
-  page:      { padding: '24px', maxWidth: 1200, margin: '0 auto' },
-  pageTitle: { fontSize: 24, fontWeight: 700, marginBottom: 20 },
-  layout:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' },
-  colLeft:   {},
-  colRight:  {},
+  page: {
+    padding:   '28px 28px',
+    maxWidth:  1200,
+    margin:    '0 auto',
+    // Hauteur = viewport - topbar, pour que les colonnes puissent être sticky/scroll
+    height:    `calc(100vh - ${TOPBAR_H}px)`,
+    display:   'flex',
+    flexDirection: 'column',
+    boxSizing: 'border-box',
+  },
 
-  formCard:  { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 },
-  formTitle: { fontSize: 17, fontWeight: 700, marginBottom: 16 },
-  searchInput: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: 14, outline: 'none', boxSizing: 'border-box' },
-  dropdown:  { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 10, maxHeight: 280, overflowY: 'auto' },
-  dropdownItem: { padding: '10px 14px', cursor: 'pointer', backgroundColor: '#fff', transition: 'background 0.1s' },
+  layout: {
+    display: 'grid',
+    gridTemplateColumns: '360px 1fr',
+    gap:     20,
+    flex:    1,
+    minHeight: 0, // important pour que overflow fonctionne
+  },
 
-  ligneRow:  { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f3f4f6' },
-  qteControl:{ display: 'flex', alignItems: 'center', gap: 8 },
-  qteBtn:    { width: 28, height: 28, borderRadius: 6, border: '1px solid #d1d5db', backgroundColor: '#f9fafb', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  qteVal:    { fontSize: 15, fontWeight: 600, minWidth: 24, textAlign: 'center' },
-  sousTotal: { fontSize: 14, fontWeight: 600, minWidth: 100, textAlign: 'right' },
-  removeBtn: { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, padding: '0 4px' },
+  // Colonne gauche : sticky (ne scroll pas)
+  colLeft: {
+    position:  'sticky',
+    top:       0,
+    height:    'fit-content',
+    alignSelf: 'start',
+  },
 
-  vide:      { textAlign: 'center', color: '#9ca3af', padding: '20px 0', fontSize: 13 },
+  // Colonne droite : scroll interne
+  colRight: {
+    display:       'flex',
+    flexDirection: 'column',
+    minHeight:     0,
+    overflow:      'hidden',
+  },
 
-  modeRow:   { display: 'flex', gap: 8, marginTop: 16 },
-  modeBtn:   { flex: 1, padding: '9px 8px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' },
+  /* Formulaire */
+  formCard: {
+    background:   WHITE,
+    border:       `1px solid ${BORDER}`,
+    borderRadius: 16,
+    padding:      24,
+  },
+  formHeader: {
+    display:    'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  formEyebrow: {
+    fontSize:      11,
+    fontWeight:    700,
+    color:         NAVY,
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+  },
+  formBadge: {
+    background:   NAVY,
+    color:        WHITE,
+    fontSize:     10,
+    fontWeight:   700,
+    padding:      '3px 9px',
+    borderRadius: 20,
+    letterSpacing: '0.5px',
+  },
+  formDivider: {
+    height:       1,
+    background:   BORDER,
+    marginBottom: 16,
+  },
 
-  totalRow:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '2px solid #f3f4f6' },
-  totalLabel:{ fontSize: 15, fontWeight: 600 },
-  totalVal:  { fontSize: 20, fontWeight: 800, color: '#111827' },
-  btnValider:{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 15, fontWeight: 700, transition: 'opacity 0.2s' },
+  /* Recherche */
+  searchWrap: {
+    display:     'flex',
+    alignItems:  'center',
+    gap:         10,
+    border:      `1.5px solid ${BORDER}`,
+    borderRadius: 10,
+    padding:     '9px 14px',
+    background:  BG,
+    transition:  'border-color 0.15s',
+  },
+  searchInput: {
+    flex:       1,
+    border:     'none',
+    outline:    'none',
+    fontSize:   13,
+    color:      NAVY,
+    background: 'transparent',
+  },
+  dropdown: {
+    position:     'absolute',
+    top:          'calc(100% + 4px)',
+    left:         0,
+    right:        0,
+    background:   WHITE,
+    border:       `1px solid ${BORDER}`,
+    borderRadius: 10,
+    boxShadow:    '0 8px 24px rgba(0,0,0,0.08)',
+    zIndex:       10,
+    maxHeight:    260,
+    overflowY:    'auto',
+  },
+  dropdownItem: {
+    padding:    '10px 14px',
+    cursor:     'pointer',
+    background: WHITE,
+    borderBottom: `1px solid ${BORDER}`,
+    transition: 'background 0.1s',
+  },
 
-  alertSuccess: { backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 14 },
-  alertError:   { backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 8, padding: '10px 14px', marginTop: 12, fontSize: 14 },
+  /* Lignes */
+  lignesWrap: {
+    minHeight: 48,
+  },
+  ligneRow: {
+    display:     'flex',
+    alignItems:  'center',
+    gap:         12,
+    padding:     '10px 0',
+    borderBottom: `1px solid ${BG}`,
+  },
+  qteControl: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        8,
+    flexShrink: 0,
+  },
+  qteBtn: {
+    width:          28,
+    height:         28,
+    borderRadius:   7,
+    border:         `1px solid ${BORDER}`,
+    background:     BG,
+    cursor:         'pointer',
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+    color:          NAVY,
+  },
+  qteVal: {
+    fontSize:  14,
+    fontWeight: 700,
+    minWidth:  22,
+    textAlign: 'center',
+    color:     NAVY,
+  },
+  sousTotal: {
+    fontSize:   13,
+    fontWeight: 700,
+    minWidth:   90,
+    textAlign:  'right',
+    color:      NAVY,
+    flexShrink: 0,
+  },
+  removeBtn: {
+    background: 'none',
+    border:     'none',
+    cursor:     'pointer',
+    padding:    '4px',
+    flexShrink: 0,
+    display:    'flex',
+    alignItems: 'center',
+  },
+
+  vide: {
+    textAlign: 'center',
+    color:     MUTED,
+    padding:   '20px 0',
+    fontSize:  13,
+    letterSpacing: '0.3px',
+  },
+
+  /* Mode paiement */
+  modeLabel: {
+    fontSize:      10,
+    fontWeight:    600,
+    color:         MUTED,
+    letterSpacing: '1.5px',
+    textTransform: 'uppercase',
+    marginBottom:  8,
+  },
+  modeRow: {
+    display: 'flex',
+    gap:     8,
+  },
+  modeBtn: {
+    flex:        1,
+    display:     'flex',
+    alignItems:  'center',
+    justifyContent: 'center',
+    gap:         6,
+    padding:     '9px 8px',
+    borderRadius: 9,
+    fontSize:    12,
+    fontWeight:  600,
+    cursor:      'pointer',
+    transition:  'all 0.15s',
+  },
+
+  /* Total + valider */
+  totalRow: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    marginTop:      18,
+    paddingTop:     16,
+    borderTop:      `1px solid ${BORDER}`,
+  },
+  totalEyebrow: {
+    fontSize:      10,
+    fontWeight:    600,
+    color:         MUTED,
+    letterSpacing: '1.5px',
+    textTransform: 'uppercase',
+    marginBottom:  4,
+  },
+  totalVal: {
+    fontSize:      22,
+    fontWeight:    800,
+    color:         NAVY,
+    letterSpacing: '-0.5px',
+  },
+  btnValider: {
+    display:        'flex',
+    alignItems:     'center',
+    gap:            8,
+    background:     GREEN,
+    color:          WHITE,
+    border:         'none',
+    padding:        '12px 22px',
+    borderRadius:   10,
+    fontSize:       13,
+    fontWeight:     700,
+    transition:     'opacity 0.2s',
+  },
+
+  alertSuccess: {
+    background:   '#EBF5EF',
+    border:       `1px solid #A8D5B5`,
+    color:        GREEN,
+    borderRadius: 9,
+    padding:      '10px 16px',
+    marginBottom: 16,
+    fontSize:     13,
+    fontWeight:   500,
+  },
+  alertError: {
+    background:   '#FEF1F1',
+    border:       '1px solid #FBBCBC',
+    color:        '#c0392b',
+    borderRadius: 9,
+    padding:      '10px 14px',
+    marginTop:    12,
+    fontSize:     13,
+  },
 }
 
 const hs = {
-  wrapper:   { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' },
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f3f4f6' },
-  title:     { fontSize: 16, fontWeight: 700, margin: 0 },
-  totalJour: { fontSize: 13, color: '#374151', backgroundColor: '#f0fdf4', padding: '6px 12px', borderRadius: 8 },
-  filtres:   { display: 'flex', gap: 8, padding: '12px 20px', flexWrap: 'wrap', borderBottom: '1px solid #f3f4f6' },
-  select:    { padding: '7px 10px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13, backgroundColor: '#fff' },
-  dateInput: { padding: '7px 10px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13 },
-  row:       { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderBottom: '1px solid #f9fafb', cursor: 'pointer', transition: 'background 0.1s' },
-  annuleeBadge: { backgroundColor: '#fee2e2', color: '#dc2626', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 8, marginLeft: 8 },
-  pagination:{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px' },
-  pageBtn:   { backgroundColor: '#f3f4f6', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
+  // wrapper prend toute la hauteur de la colonne droite et scroll en interne
+  wrapper: {
+    background:    WHITE,
+    border:        `1px solid ${BORDER}`,
+    borderRadius:  16,
+    display:       'flex',
+    flexDirection: 'column',
+    height:        '100%',
+    overflow:      'hidden',
+  },
+  headerRow: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    padding:        '16px 20px',
+    borderBottom:   `1px solid ${BORDER}`,
+    flexShrink:     0,
+  },
+  title: {
+    fontSize:      11,
+    fontWeight:    700,
+    color:         NAVY,
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+  },
+  totalJour: {
+    fontSize:     12,
+    color:        GREEN,
+    background:   '#EBF5EF',
+    padding:      '5px 12px',
+    borderRadius: 20,
+    fontWeight:   500,
+  },
+
+  filtres: {
+    display:      'flex',
+    gap:          8,
+    padding:      '12px 16px',
+    flexWrap:     'wrap',
+    borderBottom: `1px solid ${BORDER}`,
+    flexShrink:   0,
+  },
+  selectWrap: {
+    position:     'relative',
+    display:      'flex',
+    alignItems:   'center',
+  },
+  selectNative: {
+    appearance:   'none',
+    WebkitAppearance: 'none',
+    padding:      '7px 32px 7px 12px',
+    borderRadius: 9,
+    border:       `1.5px solid ${BORDER}`,
+    fontSize:     12,
+    color:        NAVY,
+    background:   WHITE,
+    outline:      'none',
+    cursor:       'pointer',
+    fontWeight:   500,
+  },
+  selectIcon: {
+    position:     'absolute',
+    right:        10,
+    pointerEvents:'none',
+  },
+  dateWrap: {
+    display:      'flex',
+    alignItems:   'center',
+    gap:          7,
+    border:       `1.5px solid ${BORDER}`,
+    borderRadius: 9,
+    padding:      '7px 12px',
+    background:   WHITE,
+  },
+  dateNative: {
+    border:     'none',
+    outline:    'none',
+    fontSize:   12,
+    color:      NAVY,
+    background: 'transparent',
+    cursor:     'pointer',
+    fontWeight: 500,
+  },
+
+  // zone qui scroll
+  liste: {
+    flex:       1,
+    overflowY:  'auto',
+    minHeight:  0,
+  },
+  row: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    padding:        '12px 20px',
+    borderBottom:   `1px solid ${BG}`,
+    cursor:         'pointer',
+    transition:     'background 0.1s',
+    background:     WHITE,
+  },
+  annuleeBadge: {
+    background:   '#FEF1F1',
+    color:        '#c0392b',
+    fontSize:     10,
+    fontWeight:   700,
+    padding:      '2px 8px',
+    borderRadius: 8,
+  },
+
+  pagination: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    padding:        '12px 16px',
+    borderTop:      `1px solid ${BORDER}`,
+    flexShrink:     0,
+  },
+  pageBtn: {
+    display:        'flex',
+    alignItems:     'center',
+    gap:            4,
+    background:     BG,
+    border:         'none',
+    padding:        '6px 14px',
+    borderRadius:   8,
+    cursor:         'pointer',
+    fontSize:       12,
+    color:          NAVY,
+    fontWeight:     500,
+  },
+
+  empty: {
+    color:     MUTED,
+    textAlign: 'center',
+    padding:   24,
+    fontSize:  13,
+  },
+  searchBar: {
+    display:      'flex',
+    alignItems:   'center',
+    gap:          8,
+    padding:      '10px 16px',
+    borderBottom: `1px solid ${BORDER}`,
+    flexShrink:   0,
+    background:   WHITE,
+  },
+  searchWrap: {
+    display:      'flex',
+    alignItems:   'center',
+    gap:          8,
+    flex:         1,
+    border:       `1.5px solid ${BORDER}`,
+    borderRadius: 9,
+    padding:      '7px 12px',
+    background:   BG,
+  },
+  searchInput: {
+    flex:       1,
+    border:     'none',
+    outline:    'none',
+    fontSize:   12,
+    color:      NAVY,
+    background: 'transparent',
+  },
+  clearBtn: {
+    background: 'none',
+    border:     'none',
+    cursor:     'pointer',
+    padding:    2,
+    display:    'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
 }
 
 const dr = {
-  overlay:    { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 40, display: 'flex', justifyContent: 'flex-end' },
-  drawer:     { backgroundColor: '#fff', width: '100%', maxWidth: 440, height: '100vh', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 24px rgba(0,0,0,0.1)', overflowY: 'auto' },
-  header:     { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '20px', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 1 },
-  closeBtn:   { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280' },
-  body:       { padding: 20, flex: 1 },
-  infoGrid:   { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 },
-  section:    { marginBottom: 16 },
-  sectionTitle:{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
-  ligne:      { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f9fafb' },
-  totalRow:   { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTop: '2px solid #111827' },
-  totalVal:   { fontSize: 18, fontWeight: 800 },
-  statutBadge:{ padding: '3px 10px', borderRadius: 10, fontSize: 12, fontWeight: 600 },
-  btnAnnuler: { backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, width: '100%' },
-  confirmBox: { backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 16 },
-  btnConfirm: { backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 },
-  btnCancel:  { backgroundColor: '#f3f4f6', color: '#374151', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer' },
-  alertError: { backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 14 },
+  overlay: {
+    position:        'fixed',
+    inset:           0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    zIndex:          40,
+    display:         'flex',
+    justifyContent:  'flex-end',
+  },
+  drawer: {
+    background:    WHITE,
+    width:         '100%',
+    maxWidth:      440,
+    height:        '100vh',
+    display:       'flex',
+    flexDirection: 'column',
+    boxShadow:     '-8px 0 32px rgba(0,0,0,0.08)',
+    overflowY:     'auto',
+  },
+  header: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'flex-start',
+    padding:        '22px 20px 18px',
+    borderBottom:   `1px solid ${BORDER}`,
+    position:       'sticky',
+    top:            0,
+    background:     WHITE,
+    zIndex:         1,
+  },
+  drawerEyebrow: {
+    fontSize:      10,
+    fontWeight:    600,
+    color:         MUTED,
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    marginBottom:  4,
+  },
+  drawerTitle: {
+    margin:        0,
+    fontSize:      18,
+    fontWeight:    800,
+    color:         NAVY,
+    letterSpacing: '-0.3px',
+  },
+  drawerDate: {
+    fontSize:  12,
+    color:     MUTED,
+    marginTop: 3,
+  },
+  closeBtn: {
+    background: 'none',
+    border:     'none',
+    cursor:     'pointer',
+    padding:    6,
+    display:    'flex',
+    alignItems: 'center',
+  },
+  body: {
+    padding: '20px',
+    flex:    1,
+  },
+  infoGrid: {
+    display:             'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap:                 16,
+    marginBottom:        4,
+  },
+  sectionTitle: {
+    fontSize:      10,
+    fontWeight:    700,
+    color:         MUTED,
+    textTransform: 'uppercase',
+    letterSpacing: '1.5px',
+    marginBottom:  10,
+  },
+  ligne: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    padding:        '8px 0',
+    borderBottom:   `1px solid ${BG}`,
+  },
+  totalRow: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    marginTop:      16,
+    paddingTop:     12,
+    borderTop:      `2px solid ${NAVY}`,
+  },
+  totalVal: {
+    fontSize:   18,
+    fontWeight: 800,
+    color:      NAVY,
+  },
+  statutBadge: {
+    padding:      '3px 10px',
+    borderRadius: 20,
+    fontSize:     11,
+    fontWeight:   700,
+    display:      'inline-block',
+  },
+  btnAnnuler: {
+    width:        '100%',
+    background:   '#FEF1F1',
+    color:        '#c0392b',
+    border:       '1px solid #FBBCBC',
+    padding:      '10px 16px',
+    borderRadius: 9,
+    cursor:       'pointer',
+    fontSize:     13,
+    fontWeight:   600,
+  },
+  confirmBox: {
+    background:   '#FEF1F1',
+    border:       '1px solid #FBBCBC',
+    borderRadius: 9,
+    padding:      16,
+  },
+  btnConfirm: {
+    background:   '#c0392b',
+    color:        WHITE,
+    border:       'none',
+    padding:      '8px 16px',
+    borderRadius: 8,
+    cursor:       'pointer',
+    fontWeight:   700,
+    fontSize:     13,
+  },
+  btnCancel: {
+    background:   BG,
+    color:        NAVY,
+    border:       'none',
+    padding:      '8px 16px',
+    borderRadius: 8,
+    cursor:       'pointer',
+    fontSize:     13,
+  },
+  alertError: {
+    background:   '#FEF1F1',
+    border:       '1px solid #FBBCBC',
+    color:        '#c0392b',
+    borderRadius: 9,
+    padding:      '10px 14px',
+    marginBottom: 12,
+    fontSize:     13,
+  },
 }
 
 export default VentesPage
