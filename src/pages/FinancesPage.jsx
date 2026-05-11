@@ -45,6 +45,68 @@ const today30 = () => {
   return { date_debut: iso(debut), date_fin: iso(fin) }
 }
 
+// ─── Responsive CSS ───────────────────────────
+const RESPONSIVE_CSS = `
+  .fp-page { padding: 32px 28px; max-width: 1100px; margin: 0 auto; }
+  .fp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+  .fp-stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .fp-stat-card { display: flex; align-items: center; gap: 12px; background: ${WHITE}; border: 1px solid ${BORDER}; border-radius: 12px; padding: 14px 18px; flex: 1; min-width: 160px; }
+  .fp-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .fp-field-group { margin-bottom: 16px; flex: 1; min-width: 160px; }
+  .fp-tabs { display: flex; border-bottom: 1.5px solid ${BORDER}; margin-bottom: 24px; gap: 4px; overflow-x: auto; }
+  .fp-tab { display: flex; align-items: center; gap: 6px; background: none; border: none; padding: 10px 18px; cursor: pointer; font-size: 13px; transition: all 0.15s; border-bottom: 2.5px solid transparent; white-space: nowrap; flex-shrink: 0; }
+  .fp-tab-label { display: inline; }
+  .fp-dep-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .fp-dep-val { font-size: 12px; font-weight: 700; color: ${NAVY}; width: 150px; text-align: right; }
+  .fp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .fp-creance-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .fp-creance-right { text-align: right; }
+  .fp-periode-picker { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .fp-form-card { background: ${WHITE}; border: 1px solid ${BORDER}; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; }
+  .fp-btn-row { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .fp-creance-progress-row { display: flex; justify-content: space-between; font-size: 11px; color: ${MUTED}; margin-top: 5px; }
+
+  @media (max-width: 640px) {
+    .fp-page { padding: 16px 14px; }
+    .fp-header { flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .fp-stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fp-stat-card { min-width: unset; padding: 10px 12px; gap: 8px; border-radius: 10px; }
+    .fp-row { flex-direction: column; gap: 0; }
+    .fp-field-group { min-width: unset; width: 100%; }
+    .fp-tab { padding: 10px 12px; font-size: 12px; }
+    .fp-tab-label { display: none; }
+    .fp-dep-row { gap: 6px; }
+    .fp-dep-val { width: 110px; font-size: 11px; }
+    .fp-form-card { padding: 16px; }
+    .fp-creance-header { flex-direction: column; gap: 10px; }
+    .fp-creance-right { text-align: left; display: flex; align-items: center; gap: 10px; }
+    .fp-creance-progress-row { flex-direction: column; gap: 2px; }
+    .fp-periode-picker { gap: 6px; }
+    .fp-btn-row { justify-content: stretch; }
+    .fp-btn-row > button { width: 100%; justify-content: center; }
+  }
+
+  @media (max-width: 400px) {
+    .fp-stats-row { grid-template-columns: 1fr; }
+  }
+`
+
+function InjectStyles() {
+  useEffect(() => {
+    const id = 'fp-responsive-styles'
+    if (!document.getElementById(id)) {
+      const style = document.createElement('style')
+      style.id = id
+      style.textContent = RESPONSIVE_CSS
+      document.head.appendChild(style)
+    }
+    return () => {
+      // keep styles; they're shared
+    }
+  }, [])
+  return null
+}
+
 // ─── Badge type ───────────────────────────────
 function TypeBadge({ type }) {
   const c = TYPE_COLORS[type] || { bg: BG, color: MUTED }
@@ -58,7 +120,7 @@ function StatutBadge({ statut }) {
 
 function Field({ label, name, type = 'text', value, onChange, required = true, placeholder }) {
   return (
-    <div style={s.fieldGroup}>
+    <div className="fp-field-group">
       <label style={s.label}>{label}</label>
       <input
         name={name} type={type} value={value}
@@ -89,7 +151,7 @@ function CustomSelect({ name, value, onChange, options }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', flex: 1, minWidth: 160 }}>
+    <div className="fp-field-group" ref={ref} style={{ position: 'relative' }}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -170,7 +232,6 @@ const cs = {
   },
 }
 
-
 // ─── Calendrier custom ────────────────────────
 const JOURS_CAL  = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
 const MOIS_FR_CAL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
@@ -235,7 +296,7 @@ function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
       </button>
 
       {open && (
-        <div style={dp.calendar}>
+        <div style={{ ...dp.calendar, left: 'auto', right: 0 }}>
           <div style={dp.calHeader}>
             <button onClick={prevMonth} style={dp.navBtn} type="button">
               <ChevronLeft size={14} color={NAVY} strokeWidth={2} />
@@ -296,7 +357,7 @@ const dp = {
     border:       `1.5px solid ${BORDER}`,
     background:   WHITE,
     cursor:       'pointer',
-    minWidth:     140,
+    minWidth:     130,
     transition:   'border-color 0.15s',
   },
   clearBtn: {
@@ -311,14 +372,13 @@ const dp = {
   calendar: {
     position:     'absolute',
     top:          'calc(100% + 4px)',
-    left:         0,
     background:   WHITE,
     border:       `1.5px solid ${BORDER}`,
     borderRadius: 14,
     boxShadow:    '0 12px 40px rgba(0,0,0,0.10)',
     zIndex:       30,
     padding:      14,
-    width:        260,
+    width:        248,
   },
   calHeader: {
     display:        'flex',
@@ -389,13 +449,13 @@ const dp = {
 // ─── PeriodePicker ────────────────────────────
 function PeriodePicker({ value, onChange }) {
   const PRESETS = [
-    { label: "Aujourd'hui", days: 0  },
-    { label: '7 jours',     days: 7  },
-    { label: '30 jours',    days: 30 },
-    { label: '3 mois',      days: 90 },
+    { label: "Auj.",   days: 0  },
+    { label: '7j',     days: 7  },
+    { label: '30j',    days: 30 },
+    { label: '3 mois', days: 90 },
   ]
 
-  const [activePreset, setActivePreset] = useState(30)  // null = période custom
+  const [activePreset, setActivePreset] = useState(30)
 
   const appliquer = (days) => {
     setActivePreset(days)
@@ -407,7 +467,7 @@ function PeriodePicker({ value, onChange }) {
   }
 
   return (
-    <div style={pp.wrap}>
+    <div className="fp-periode-picker">
       {PRESETS.map(p => {
         const actif = activePreset === p.days
         return (
@@ -426,7 +486,7 @@ function PeriodePicker({ value, onChange }) {
           </button>
         )
       })}
-      <div style={{ width: 1, height: 22, background: BORDER }} />
+      <div style={{ width: 1, height: 22, background: BORDER, flexShrink: 0 }} />
       <CustomDatePicker
         name="date_debut"
         value={value.date_debut}
@@ -445,18 +505,13 @@ function PeriodePicker({ value, onChange }) {
 }
 
 const pp = {
-  wrap: {
-    display:    'flex',
-    gap:        6,
-    flexWrap:   'wrap',
-    alignItems: 'center',
-  },
   btn: {
-    padding:      '7px 14px',
+    padding:      '7px 11px',
     borderRadius: 9,
     cursor:       'pointer',
     fontSize:     12,
     transition:   'all 0.15s',
+    flexShrink:   0,
   },
 }
 
@@ -483,7 +538,7 @@ function CreanceCard({ creance, onPaiement }) {
 
   return (
     <div style={s.creanceCard}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+      <div className="fp-creance-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ ...s.avatar, background: '#EEF1F8', color: NAVY }}>
             {creance.nom_client?.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase() || '?'}
@@ -498,7 +553,7 @@ function CreanceCard({ creance, onPaiement }) {
             )}
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div className="fp-creance-right">
           <StatutBadge statut={creance.statut} />
           <div style={{ fontWeight: 800, color: NAVY, fontSize: 15, marginTop: 6 }}>
             {fmt(restant)} <span style={{ fontSize: 11, fontWeight: 500, color: MUTED }}>FCFA restant</span>
@@ -509,7 +564,7 @@ function CreanceCard({ creance, onPaiement }) {
       <div style={s.progressTrack}>
         <div style={{ ...s.progressFill, width: `${pct}%`, background: clos ? MUTED : GREEN }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MUTED, marginTop: 5 }}>
+      <div className="fp-creance-progress-row">
         <span>Payé : {fmt(paye)} FCFA</span>
         <span>Total : {fmt(total)} FCFA</span>
       </div>
@@ -546,13 +601,13 @@ function CreanceCard({ creance, onPaiement }) {
 
 // ─── Page principale ──────────────────────────
 function FinancesPage() {
-  const [periode, setPeriode]   = useState(today30)
+  const [periode, setPeriode]     = useState(today30)
   const [dashboard, setDashboard] = useState(null)
-  const [depenses, setDepenses] = useState([])
-  const [creances, setCreances] = useState([])
-  const [onglet, setOnglet]     = useState('kpis')
-  const [loading, setLoading]   = useState(true)
-  const [msg, setMsg]           = useState({ type: '', text: '' })
+  const [depenses, setDepenses]   = useState([])
+  const [creances, setCreances]   = useState([])
+  const [onglet, setOnglet]       = useState('kpis')
+  const [loading, setLoading]     = useState(true)
+  const [msg, setMsg]             = useState({ type: '', text: '' })
 
   const DEP_INIT = { type: 'autre', montant: '', description: '', date: new Date().toISOString().split('T')[0] }
   const [showDepForm, setShowDepForm]     = useState(false)
@@ -620,10 +675,11 @@ function FinancesPage() {
   ]
 
   return (
-    <div style={s.page}>
+    <div className="fp-page">
+      <InjectStyles />
 
       {/* ── HEADER ── */}
-      <div style={s.header}>
+      <div className="fp-header">
         <div>
           <p style={s.eyebrow}>Gestion</p>
           <h1 style={s.title}>Finances</h1>
@@ -633,7 +689,7 @@ function FinancesPage() {
       </div>
 
       {/* ── KPI STATS ── */}
-      <div style={s.statsRow}>
+      <div className="fp-stats-row">
         {[
           { label: "Chiffre d'affaires", val: ca,       Icon: Wallet,       bg: '#EEF1F8', color: NAVY  },
           { label: 'Bénéfice brut',      val: benefice, Icon: TrendingUp,   bg: '#EBF5EF', color: GREEN },
@@ -643,14 +699,14 @@ function FinancesPage() {
             bg: resultat >= 0 ? '#EBF5EF' : '#FEF1F1',
             color: resultat >= 0 ? GREEN : RED },
         ].map(({ label, val, Icon, bg, color }) => (
-          <div key={label} style={s.statCard}>
+          <div key={label} className="fp-stat-card">
             <div style={{ ...s.statIcon, background: bg }}>
               <Icon size={16} color={color} strokeWidth={1.8} />
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ ...s.statVal, color }}>{fmt(val)}</div>
               <div style={s.statValUnit}>FCFA</div>
-              <div style={s.statLabel}>{label}</div>
+              <div style={{ ...s.statLabel, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
             </div>
           </div>
         ))}
@@ -664,20 +720,20 @@ function FinancesPage() {
       )}
 
       {/* ── ONGLETS ── */}
-      <div style={s.tabs}>
+      <div className="fp-tabs">
         {ONGLETS.map(({ key, label, Icon }) => (
           <button
             key={key}
             onClick={() => setOnglet(key)}
+            className="fp-tab"
             style={{
-              ...s.tab,
               color:        onglet === key ? NAVY : MUTED,
               borderBottom: onglet === key ? `2.5px solid ${GOLD}` : '2.5px solid transparent',
               fontWeight:   onglet === key ? 700 : 500,
             }}
           >
             <Icon size={13} strokeWidth={2} />
-            <span>{label}</span>
+            <span className="fp-tab-label">{label}</span>
           </button>
         ))}
       </div>
@@ -690,18 +746,18 @@ function FinancesPage() {
               <div style={s.sectionHeader}>
                 <span style={s.sectionTitle}>Répartition des dépenses</span>
               </div>
-              <div style={{ padding: '8px 20px 16px' }}>
+              <div style={{ padding: '8px 14px 16px' }}>
                 {dashboard.depenses.par_type.map(d => {
                   const pct = depTotal > 0 ? (Number(d.total) / depTotal * 100).toFixed(1) : 0
                   const c   = TYPE_COLORS[d.type] || { color: MUTED }
                   return (
-                    <div key={d.type} style={s.depRow}>
+                    <div key={d.type} className="fp-dep-row">
                       <TypeBadge type={d.type} />
                       <div style={s.depBarTrack}>
                         <div style={{ ...s.depBarFill, width: `${pct}%`, background: c.color }} />
                       </div>
                       <span style={s.depPct}>{pct}%</span>
-                      <span style={s.depVal}>{fmt(d.total)} FCFA</span>
+                      <span className="fp-dep-val">{fmt(d.total)} FCFA</span>
                     </div>
                   )
                 })}
@@ -721,7 +777,7 @@ function FinancesPage() {
       {/* ── DÉPENSES ── */}
       {onglet === 'depenses' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <div className="fp-btn-row">
             <button
               onClick={() => setShowDepForm(v => !v)}
               style={showDepForm ? s.btnSecondary : s.btnPrimary}
@@ -734,14 +790,13 @@ function FinancesPage() {
           </div>
 
           {showDepForm && (
-            <div style={s.formCard}>
+            <div className="fp-form-card">
               <div style={s.formHeader}>
                 <span style={s.formTitle}>Nouvelle dépense</span>
               </div>
               <div style={s.formDivider} />
               <form onSubmit={handleDepSubmit} noValidate>
-                <div style={s.row}>
-                  {/* Select type custom */}
+                <div className="fp-row">
                   <CustomSelect
                     name="type"
                     value={depForm.type}
@@ -749,7 +804,7 @@ function FinancesPage() {
                     options={TYPES_DEPENSE.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
                   />
                   <Field label="Montant (FCFA) *" name="montant" type="number" value={depForm.montant} onChange={handleDepChange} />
-                  <div style={s.fieldGroup}>
+                  <div className="fp-field-group">
                     <label style={s.label}>Date *</label>
                     <CustomDatePicker
                       name="date"
@@ -770,6 +825,8 @@ function FinancesPage() {
                     disabled={depSubmitting || !depForm.montant}
                     style={{
                       ...s.btnPrimary,
+                      width: '100%',
+                      justifyContent: 'center',
                       opacity: depSubmitting || !depForm.montant ? 0.5 : 1,
                       cursor:  depSubmitting || !depForm.montant ? 'not-allowed' : 'pointer',
                     }}
@@ -787,7 +844,7 @@ function FinancesPage() {
                 {depenses.length} dépense{depenses.length !== 1 ? 's' : ''}
               </span>
               <span style={{ ...s.statVal, fontSize: 14, color: GOLD }}>
-                Total : {fmt(depenses.reduce((a, d) => a + Number(d.montant || 0), 0))} FCFA
+                {fmt(depenses.reduce((a, d) => a + Number(d.montant || 0), 0))} FCFA
               </span>
             </div>
             {loading ? (
@@ -798,31 +855,33 @@ function FinancesPage() {
                 <p style={{ margin: '10px 0 0', color: MUTED, fontSize: 13 }}>Aucune dépense sur cette période.</p>
               </div>
             ) : (
-              <table style={s.table}>
-                <thead>
-                  <tr>
-                    {['Date', 'Type', 'Description', 'Montant'].map(h => (
-                      <th key={h} style={s.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {depenses.map((d, i) => (
-                    <tr key={d.id}
-                      style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
-                      onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
-                      onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
-                    >
-                      <td style={s.td}>{fmtD(d.date)}</td>
-                      <td style={s.td}><TypeBadge type={d.type} /></td>
-                      <td style={{ ...s.td, color: MUTED }}>{d.description || '—'}</td>
-                      <td style={s.td}>
-                        <span style={{ fontWeight: 700, color: GOLD }}>{fmt(d.montant)} FCFA</span>
-                      </td>
+              <div className="fp-table-wrap">
+                <table style={s.table}>
+                  <thead>
+                    <tr>
+                      {['Date', 'Type', 'Description', 'Montant'].map(h => (
+                        <th key={h} style={s.th}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {depenses.map((d, i) => (
+                      <tr key={d.id}
+                        style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
+                        onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
+                        onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
+                      >
+                        <td style={{ ...s.td, whiteSpace: 'nowrap' }}>{fmtD(d.date)}</td>
+                        <td style={s.td}><TypeBadge type={d.type} /></td>
+                        <td style={{ ...s.td, color: MUTED, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.description || '—'}</td>
+                        <td style={{ ...s.td, whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 700, color: GOLD }}>{fmt(d.montant)} FCFA</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -860,8 +919,6 @@ function FinancesPage() {
 
 // ─── STYLES ───────────────────────────────────
 const s = {
-  page:          { padding: '32px 28px', maxWidth: 1100, margin: '0 auto' },
-  header:        { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 },
   eyebrow:       { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
   title:         { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
   titleUnderline:{ width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
@@ -869,8 +926,6 @@ const s = {
   btnPrimary:  { display: 'flex', alignItems: 'center', gap: 8, background: NAVY, color: WHITE, border: 'none', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
   btnSecondary:{ display: 'flex', alignItems: 'center', gap: 8, background: BG,   color: NAVY,  border: 'none', padding: '11px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer' },
 
-  statsRow: { display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' },
-  statCard: { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1, minWidth: 160 },
   statIcon: { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   statVal:  { fontSize: 16, fontWeight: 800, color: NAVY, lineHeight: 1 },
   statValUnit: { fontSize: 10, color: MUTED, fontWeight: 500, letterSpacing: '0.5px' },
@@ -879,41 +934,33 @@ const s = {
   alertSuccess: { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13, fontWeight: 500 },
   alertError:   { background: '#FEF1F1', border: '1px solid #FBBCBC', color: RED,   borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13 },
 
-  tabs: { display: 'flex', borderBottom: `1.5px solid ${BORDER}`, marginBottom: 24, gap: 4 },
-  tab:  { display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: '10px 18px', cursor: 'pointer', fontSize: 13, transition: 'all 0.15s', borderBottom: '2.5px solid transparent' },
-
   tableCard:    { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
   sectionHeader:{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}` },
   sectionTitle: { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
-  tableToolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${BORDER}` },
+  tableToolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${BORDER}` },
   resultCount:  { fontSize: 12, color: MUTED, fontWeight: 500 },
 
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th:    { padding: '11px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}` },
+  table: { width: '100%', borderCollapse: 'collapse', minWidth: 480 },
+  th:    { padding: '11px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' },
   tr:    { borderBottom: `1px solid ${BG}`, transition: 'background 0.1s' },
-  td:    { padding: '13px 16px', fontSize: 13, verticalAlign: 'middle' },
+  td:    { padding: '12px 12px', fontSize: 13, verticalAlign: 'middle' },
 
-  badge:  { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 },
+  badge:  { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' },
   avatar: { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, letterSpacing: '0.5px', flexShrink: 0 },
 
-  formCard:    { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24 },
   formHeader:  { marginBottom: 14 },
   formTitle:   { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
   formDivider: { height: 1, background: BORDER, marginBottom: 18 },
   formActions: { marginTop: 8 },
 
-  row:        { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' },
-  fieldGroup: { marginBottom: 16, flex: 1, minWidth: 160 },
   label:      { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
   input:      { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE },
 
-  depRow:      { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 },
-  depBarTrack: { flex: 1, height: 6, background: BG, borderRadius: 4, overflow: 'hidden' },
+  depBarTrack: { flex: 1, height: 6, background: BG, borderRadius: 4, overflow: 'hidden', minWidth: 40 },
   depBarFill:  { height: '100%', borderRadius: 4, transition: 'width 0.3s' },
-  depPct:      { fontSize: 12, color: MUTED, width: 38, textAlign: 'right' },
-  depVal:      { fontSize: 12, fontWeight: 700, color: NAVY, width: 150, textAlign: 'right' },
+  depPct:      { fontSize: 12, color: MUTED, width: 38, textAlign: 'right', flexShrink: 0 },
 
-  creanceCard:  { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 22px' },
+  creanceCard:  { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 16px' },
   progressTrack:{ height: 6, background: BG, borderRadius: 4, overflow: 'hidden', marginBottom: 5 },
   progressFill: { height: '100%', borderRadius: 4, transition: 'width 0.4s' },
 

@@ -79,7 +79,11 @@ function ConnexionPage() {
             height: isMobile ? 48 : 56,
             marginBottom: isMobile ? 10 : 14,
           }}>
-            <span style={{ ...s.brandLetter, fontSize: isMobile ? 22 : 26 }}>E</span>
+            <img
+              src="/icons/egabegna-icon.svg"
+              alt="Egabégna"
+              style={{ width: isMobile ? 24 : 40, height: isMobile ? 24 : 74 }}
+            />
           </div>
           <h1 style={{ ...s.title, fontSize: isMobile ? 20 : 24 }}>Egabégna</h1>
           <div style={s.titleUnderline} />
@@ -148,7 +152,7 @@ function ConnexionPage() {
 const s = {
   card:          { background: WHITE, borderRadius: 18, padding: '40px 36px', width: '100%', maxWidth: 420, border: `1px solid ${BORDER}`, boxShadow: '0 20px 60px rgba(0,0,0,0.28)' },
   brand:         { textAlign: 'center', marginBottom: 28 },
-  brandIcon:     { width: 56, height: 56, background: NAVY, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 16px rgba(27,45,91,0.35)' },
+  brandIcon:     { width: 63, height: 63, background: NAVY, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 16px rgba(27,45,91,0.35)' },
   brandLetter:   { fontSize: 26, fontWeight: 800, color: GOLD },
   title:         { fontSize: 24, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
   titleUnderline:{ width: 28, height: 3, background: GOLD, borderRadius: 2, margin: '8px auto 10px' },

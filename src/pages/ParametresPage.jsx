@@ -6,7 +6,6 @@ import {
   Store, Phone, MapPin, Coins, FlaskConical,
 } from 'lucide-react'
 
-// ─── Design tokens (identiques à EmployesPage) ────────────────────────────────
 const NAVY   = '#1B2D5B'
 const GOLD   = '#C89A3C'
 const GREEN  = '#2D7A4F'
@@ -16,19 +15,96 @@ const BG     = '#F4F5F7'
 const WHITE  = '#FFFFFF'
 const RED    = '#c0392b'
 
-// ─── Devises ──────────────────────────────────────────────────────────────────
 const DEVISES = [
-  { value: 'FCFA', label: 'Franc CFA',         sym: 'FCFA' },
-  { value: 'EUR', label: 'Euro',               sym: 'EUR' },
-  { value: 'USD', label: 'Dollar US',          sym: 'USD' },
-  { value: 'GNF', label: 'Franc Guinéen',      sym: 'GNF' },
-  { value: 'MAD', label: 'Dirham Marocain',    sym: 'MAD' },
+  { value: 'FCFA', label: 'Franc CFA',      sym: 'FCFA' },
+  { value: 'EUR',  label: 'Euro',           sym: 'EUR'  },
+  { value: 'USD',  label: 'Dollar US',      sym: 'USD'  },
+  { value: 'GNF',  label: 'Franc Guinéen',  sym: 'GNF'  },
+  { value: 'MAD',  label: 'Dirham Marocain',sym: 'MAD'  },
 ]
 
-// ─── Champ formulaire ─────────────────────────────────────────────────────────
+const RESPONSIVE_CSS = `
+  .pm-page { padding: 32px 28px; max-width: 760px; margin: 0 auto; }
+
+  .pm-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .pm-field-group {
+    margin-bottom: 14px;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .pm-devise-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+
+  .pm-logo-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .pm-notif-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pm-section-card {
+    background: ${WHITE};
+    border: 1px solid ${BORDER};
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .pm-page { padding: 16px 14px; }
+
+    .pm-section-card { padding: 16px 14px; }
+
+    .pm-row { flex-direction: column; gap: 0; }
+    .pm-field-group { min-width: unset; width: 100%; }
+
+    /* Devise: 3 cols then 2 on very small */
+    .pm-devise-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .pm-logo-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+    .pm-notif-actions { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+
+  @media (max-width: 360px) {
+    .pm-devise-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+`
+
+function InjectStyles() {
+  useEffect(() => {
+    const id = 'pm-responsive-styles'
+    if (!document.getElementById(id)) {
+      const el = document.createElement('style')
+      el.id = id
+      el.textContent = RESPONSIVE_CSS
+      document.head.appendChild(el)
+    }
+  }, [])
+  return null
+}
+
 function PField({ label, name, value, onChange, type = 'text', Icon }) {
   return (
-    <div style={s.fieldGroup}>
+    <div className="pm-field-group">
       <label style={s.label}>{label}</label>
       <div style={{ position: 'relative' }}>
         {Icon && (
@@ -45,7 +121,6 @@ function PField({ label, name, value, onChange, type = 'text', Icon }) {
   )
 }
 
-// ─── Notifications push ───────────────────────────────────────────────────────
 function NotificationsPush() {
   const [permission, setPermission] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
@@ -86,7 +161,7 @@ function NotificationsPush() {
   const { Icon: StIcon } = st
 
   return (
-    <div style={s.sectionCard}>
+    <div className="pm-section-card">
       <div style={s.sectionHeader}>
         <Bell size={14} color={NAVY} strokeWidth={2} />
         <span style={s.sectionTitle}>Notifications push</span>
@@ -98,7 +173,7 @@ function NotificationsPush() {
         (rupture de stock, anomalie caisse) même si l'application est fermée.
       </p>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div className="pm-notif-actions">
         <span style={{ ...s.badge, background: st.bg, color: st.color, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
           <StIcon size={11} strokeWidth={2.5} />
           {st.label}
@@ -112,8 +187,11 @@ function NotificationsPush() {
         )}
 
         {permission === 'granted' && (
-          <button onClick={testerNotification} disabled={testLoading}
-            style={{ ...s.btnAction, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5` }}>
+          <button
+            onClick={testerNotification}
+            disabled={testLoading}
+            style={{ ...s.btnAction, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5` }}
+          >
             <FlaskConical size={12} strokeWidth={2} />
             <span>{testLoading ? 'Envoi...' : 'Tester une notification'}</span>
           </button>
@@ -129,18 +207,17 @@ function NotificationsPush() {
   )
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
 function ParametresPage() {
   const { nom_boutique, role, setAuth } = useAuthContext()
-  const [form, setForm]           = useState({ nom: '', adresse: '', telephone: '', devise: 'XOF' })
-  const [logo, setLogo]           = useState(null)
-  const [logoBase64, setLogoBase64] = useState('')
-  const [loading, setLoading]     = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [msg, setMsg]             = useState({ type: '', text: '' })
-  const [logoError, setLogoError] = useState('')
-  const [dragging, setDragging]   = useState(false)
-  const fileRef                   = useRef(null)
+  const [form, setForm]               = useState({ nom: '', adresse: '', telephone: '', devise: 'XOF' })
+  const [logo, setLogo]               = useState(null)
+  const [logoBase64, setLogoBase64]   = useState('')
+  const [loading, setLoading]         = useState(true)
+  const [submitting, setSubmitting]   = useState(false)
+  const [msg, setMsg]                 = useState({ type: '', text: '' })
+  const [logoError, setLogoError]     = useState('')
+  const [dragging, setDragging]       = useState(false)
+  const fileRef                       = useRef(null)
 
   useEffect(() => {
     boutiqueService.get().then(res => {
@@ -190,18 +267,7 @@ function ParametresPage() {
     try {
       const payload = { ...form }
       if (logoBase64) payload.logo_base64 = logoBase64
-      /*const res = await boutiqueService.patch(payload)
-      setSession({
-        access:       localStorage.getItem('access_token'),
-        refresh:      localStorage.getItem('refresh_token'),
-        role:         localStorage.getItem('role'),
-        nom_boutique: res.data.nom,
-        devise:       res.data.devise,
-        logo:         res.data.logo_url || '',
-      })*/
-      
       const res = await boutiqueService.patch(payload)
-      // Mettre à jour uniquement les champs boutique dans le context
       setAuth(prev => ({
         ...prev,
         nom_boutique: res.data.nom,
@@ -221,21 +287,20 @@ function ParametresPage() {
     }
   }
 
-  if (loading) return <div style={s.page}><p style={s.loading}>Chargement...</p></div>
+  if (loading) return <div className="pm-page"><p style={s.loading}>Chargement...</p></div>
 
   return (
-    <div style={s.page}>
+    <div className="pm-page">
+      <InjectStyles />
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <div style={s.header}>
-        <div>
-          <p style={s.eyebrow}>Configuration</p>
-          <h1 style={s.title}>Paramètres boutique</h1>
-          <div style={s.titleUnderline} />
-        </div>
+        <p style={s.eyebrow}>Configuration</p>
+        <h1 style={s.title}>Paramètres boutique</h1>
+        <div style={s.titleUnderline} />
       </div>
 
-      {/* ── MESSAGES ── */}
+      {/* MESSAGES */}
       {msg.text && (
         <div style={msg.type === 'success' ? s.alertSuccess : s.alertError}>
           {msg.text}
@@ -244,8 +309,8 @@ function ParametresPage() {
 
       <form onSubmit={handleSubmit}>
 
-        {/* ── LOGO ── */}
-        <div style={s.sectionCard}>
+        {/* LOGO */}
+        <div className="pm-section-card">
           <div style={s.sectionHeader}>
             <ImagePlus size={14} color={NAVY} strokeWidth={2} />
             <span style={s.sectionTitle}>Logo de la boutique</span>
@@ -253,14 +318,16 @@ function ParametresPage() {
           <div style={s.sectionDivider} />
 
           {logo ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div className="pm-logo-row">
               <img src={logo} alt="Logo boutique" style={s.logoPreview} />
               <div>
                 <p style={{ fontSize: 13, color: MUTED, margin: '0 0 10px' }}>
                   Logo actuel · JPG, PNG ou WebP · Max 2 MB
                 </p>
-                <button type="button" onClick={retirerLogo}
-                  style={{ ...s.btnAction, background: '#FEF1F1', color: RED, border: `1px solid #FBBCBC` }}>
+                <button
+                  type="button" onClick={retirerLogo}
+                  style={{ ...s.btnAction, background: '#FEF1F1', color: RED, border: `1px solid #FBBCBC` }}
+                >
                   <X size={12} strokeWidth={2.5} />
                   <span>Retirer le logo</span>
                 </button>
@@ -286,7 +353,7 @@ function ParametresPage() {
                 <ImagePlus size={22} color={MUTED} strokeWidth={1.5} />
               </div>
               <p style={{ margin: '8px 0 4px', fontSize: 13, color: NAVY, fontWeight: 600 }}>
-                Cliquez ou déposez votre logo ici
+                Appuyez pour ajouter un logo
               </p>
               <p style={{ margin: 0, fontSize: 12, color: MUTED }}>
                 JPG, PNG ou WebP · Max 2 MB
@@ -294,38 +361,39 @@ function ParametresPage() {
             </div>
           )}
 
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
-            onChange={handleLogoChange} style={{ display: 'none' }} />
-
-          {logoError && (
-            <p style={{ color: RED, fontSize: 12, marginTop: 8 }}>{logoError}</p>
-          )}
+          <input
+            ref={fileRef} type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleLogoChange}
+            style={{ display: 'none' }}
+          />
+          {logoError && <p style={{ color: RED, fontSize: 12, marginTop: 8 }}>{logoError}</p>}
         </div>
 
-        {/* ── INFORMATIONS ── */}
-        <div style={s.sectionCard}>
+        {/* INFORMATIONS */}
+        <div className="pm-section-card">
           <div style={s.sectionHeader}>
             <Store size={14} color={NAVY} strokeWidth={2} />
             <span style={s.sectionTitle}>Informations</span>
           </div>
           <div style={s.sectionDivider} />
 
-          <div style={s.row}>
-            <PField label="Nom de la boutique *" name="nom"       value={form.nom}       onChange={handleChange} Icon={Store}   />
+          <div className="pm-row">
+            <PField label="Nom de la boutique *" name="nom"       value={form.nom}       onChange={handleChange} Icon={Store} />
             <PField label="Téléphone"             name="telephone" value={form.telephone} onChange={handleChange} Icon={Phone} type="tel" />
           </div>
           <PField label="Adresse" name="adresse" value={form.adresse} onChange={handleChange} Icon={MapPin} />
         </div>
 
-        {/* ── DEVISE ── */}
-        <div style={s.sectionCard}>
+        {/* DEVISE */}
+        <div className="pm-section-card">
           <div style={s.sectionHeader}>
             <Coins size={14} color={NAVY} strokeWidth={2} />
             <span style={s.sectionTitle}>Devise</span>
           </div>
           <div style={s.sectionDivider} />
 
-          <div style={s.deviseGrid}>
+          <div className="pm-devise-grid">
             {DEVISES.map(d => {
               const actif = form.devise === d.value
               return (
@@ -341,15 +409,15 @@ function ParametresPage() {
                     boxShadow:    actif ? '0 2px 8px rgba(27,45,91,0.18)' : 'none',
                   }}
                 >
-                  <span style={{ fontSize: 15, fontWeight: 800, display: 'block', marginBottom: 4 }}>{d.sym}</span>
-                  <span style={{ fontSize: 11, opacity: 0.75 }}>{d.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, display: 'block', marginBottom: 3 }}>{d.sym}</span>
+                  <span style={{ fontSize: 10, opacity: 0.75, lineHeight: 1.3 }}>{d.label}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
-        {/* ── BOUTON SAVE ── */}
+        {/* SAVE */}
         <button
           type="submit"
           disabled={submitting}
@@ -357,7 +425,7 @@ function ParametresPage() {
             ...s.btnPrimary,
             width: '100%',
             justifyContent: 'center',
-            padding: '13px 28px',
+            padding: '14px 28px',
             fontSize: 14,
             marginBottom: 20,
             opacity: submitting ? 0.6 : 1,
@@ -369,16 +437,13 @@ function ParametresPage() {
         </button>
       </form>
 
-      {/* ── NOTIFICATIONS ── */}
+      {/* NOTIFICATIONS */}
       <NotificationsPush />
     </div>
   )
 }
 
-// ─── STYLES ───────────────────────────────────────────────────────────────────
 const s = {
-  page:    { padding: '32px 28px', maxWidth: 760, margin: '0 auto' },
-
   header:        { marginBottom: 28 },
   eyebrow:       { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
   title:         { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
@@ -387,23 +452,19 @@ const s = {
   alertSuccess: { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 20, fontSize: 13, fontWeight: 500 },
   alertError:   { background: '#FEF1F1', border: '1px solid #FBBCBC', color: RED,   borderRadius: 10, padding: '10px 16px', marginBottom: 20, fontSize: 13 },
 
-  sectionCard:   { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '20px 24px', marginBottom: 16 },
   sectionHeader: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 },
   sectionTitle:  { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
   sectionDivider:{ height: 1, background: BORDER, marginBottom: 18 },
 
-  row:        { display: 'flex', gap: 14 },
-  fieldGroup: { marginBottom: 14, flex: 1 },
-  label:      { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
-  input:      { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE },
-  inputIcon:  { position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' },
+  label:     { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
+  input:     { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE },
+  inputIcon: { position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' },
 
-  logoUpload:     { border: `2px dashed ${BORDER}`, borderRadius: 12, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' },
+  logoUpload:     { border: `2px dashed ${BORDER}`, borderRadius: 12, padding: '28px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' },
   logoUploadIcon: { width: 48, height: 48, background: BG, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' },
-  logoPreview:    { width: 90, height: 90, objectFit: 'contain', borderRadius: 10, border: `1px solid ${BORDER}` },
+  logoPreview:    { width: 80, height: 80, objectFit: 'contain', borderRadius: 10, border: `1px solid ${BORDER}`, flexShrink: 0 },
 
-  deviseGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 },
-  deviseBtn:  { padding: '12px 8px', borderRadius: 10, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' },
+  deviseBtn: { padding: '11px 6px', borderRadius: 10, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' },
 
   btnPrimary:{ display: 'flex', alignItems: 'center', gap: 8, background: NAVY, color: WHITE, border: 'none', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
   btnAction: { display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none' },

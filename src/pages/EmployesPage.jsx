@@ -31,6 +31,19 @@ const ROLE_CONFIG = {
   ambulant:     { bg: '#FEF8EC', color: '#9a3412'  },
 }
 
+// ─── Hook responsive ──────────────────────────
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  )
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [breakpoint])
+  return isMobile
+}
+
 // ─── Champ formulaire ─────────────────────────
 function Field({ label, name, type = 'text', value, onChange, error, required = true }) {
   return (
@@ -75,6 +88,8 @@ function StatutBadge({ employe }) {
 
 // ─── Page principale ──────────────────────────
 function EmployesPage() {
+  const isMobile = useIsMobile()
+
   const [employes, setEmployes]       = useState([])
   const [loading, setLoading]         = useState(true)
   const [showForm, setShowForm]       = useState(false)
@@ -192,7 +207,6 @@ function EmployesPage() {
     } finally { setActivant(null) }
   }
 
-  // Filtrage local par recherche
   const filtered = employes.filter(e => {
     const q = search.toLowerCase()
     return (
@@ -208,18 +222,27 @@ function EmployesPage() {
   const bloques   = employes.filter(e => e.bloque)
 
   return (
-    <div style={s.page}>
+    <div style={{ ...s.page, padding: isMobile ? '16px 12px' : '32px 28px' }}>
 
       {/* ── HEADER ── */}
-      <div style={s.header}>
+      <div style={{
+        ...s.header,
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? 14 : 0,
+        marginBottom: isMobile ? 16 : 24,
+      }}>
         <div>
           <p style={s.eyebrow}>Gestion</p>
-          <h1 style={s.title}>Employés</h1>
+          <h1 style={{ ...s.title, fontSize: isMobile ? 22 : 26 }}>Employés</h1>
           <div style={s.titleUnderline} />
         </div>
         <button
           onClick={() => { setShowForm(v => !v); setSuccessMsg(''); setGlobalError('') }}
-          style={showForm ? s.btnSecondary : s.btnPrimary}
+          style={{
+            ...(showForm ? s.btnSecondary : s.btnPrimary),
+            width: isMobile ? '100%' : undefined,
+            justifyContent: isMobile ? 'center' : undefined,
+          }}
         >
           {showForm
             ? <><X size={15} strokeWidth={2.5} /><span>Annuler</span></>
@@ -228,21 +251,30 @@ function EmployesPage() {
         </button>
       </div>
 
-      {/* ── STATS ── */}
-      <div style={s.statsRow}>
+      {/* ── STATS — 2×2 sur mobile ── */}
+      <div style={{
+        ...s.statsRow,
+        flexWrap: 'wrap',
+        gap: isMobile ? 8 : 12,
+        marginBottom: isMobile ? 16 : 24,
+      }}>
         {[
-          { label: 'Actifs',     val: actifs.length,    Icon: UserCheck,  bg: '#EBF5EF', color: GREEN      },
-          { label: 'En attente', val: enAttente.length, Icon: Clock,      bg: '#FBF5E9', color: GOLD       },
-          { label: 'Bloqués',    val: bloques.length,   Icon: ShieldOff,  bg: '#FEF1F1', color: '#c0392b'  },
-          { label: 'Total',      val: employes.length,  Icon: Users,      bg: '#EEF1F8', color: NAVY       },
+          { label: 'Actifs',     val: actifs.length,    Icon: UserCheck, bg: '#EBF5EF', color: GREEN     },
+          { label: 'En attente', val: enAttente.length, Icon: Clock,     bg: '#FBF5E9', color: GOLD      },
+          { label: 'Bloqués',    val: bloques.length,   Icon: ShieldOff, bg: '#FEF1F1', color: '#c0392b' },
+          { label: 'Total',      val: employes.length,  Icon: Users,     bg: '#EEF1F8', color: NAVY      },
         ].map(({ label, val, Icon, bg, color }) => (
-          <div key={label} style={s.statCard}>
+          <div key={label} style={{
+            ...s.statCard,
+            flex: isMobile ? '1 1 calc(50% - 4px)' : 1,
+            padding: isMobile ? '12px 14px' : '14px 18px',
+          }}>
             <div style={{ ...s.statIcon, background: bg }}>
               <Icon size={16} color={color} strokeWidth={1.8} />
             </div>
             <div>
-              <div style={s.statVal}>{val}</div>
-              <div style={s.statLabel}>{label}</div>
+              <div style={{ ...s.statVal, fontSize: isMobile ? 17 : 20 }}>{val}</div>
+              <div style={{ ...s.statLabel, fontSize: isMobile ? 10 : 11 }}>{label}</div>
             </div>
           </div>
         ))}
@@ -254,13 +286,14 @@ function EmployesPage() {
 
       {/* ── FORMULAIRE ── */}
       {showForm && (
-        <div style={s.formCard}>
+        <div style={{ ...s.formCard, padding: isMobile ? '14px 14px' : '20px 24px' }}>
           <div style={s.formHeader}>
             <span style={s.formTitle}>Nouvel employé</span>
           </div>
           <div style={s.formDivider} />
           <form onSubmit={handleSubmit} noValidate>
-            <div style={s.row}>
+            {/* Prénom + Nom : colonne sur mobile */}
+            <div style={{ ...s.row, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 0 : 12 }}>
               <Field label="Prénom *" name="prenom" value={form.prenom} onChange={handleChange} error={errors.prenom} />
               <Field label="Nom *"    name="nom"    value={form.nom}    onChange={handleChange} error={errors.nom}    />
             </div>
@@ -276,7 +309,13 @@ function EmployesPage() {
               <button
                 type="submit"
                 disabled={submitting || !isFormValid()}
-                style={{ ...s.btnPrimary, opacity: (submitting || !isFormValid()) ? 0.5 : 1, cursor: (submitting || !isFormValid()) ? 'not-allowed' : 'pointer' }}
+                style={{
+                  ...s.btnPrimary,
+                  width: isMobile ? '100%' : undefined,
+                  justifyContent: isMobile ? 'center' : undefined,
+                  opacity: (submitting || !isFormValid()) ? 0.5 : 1,
+                  cursor:  (submitting || !isFormValid()) ? 'not-allowed' : 'pointer',
+                }}
               >
                 {submitting ? 'Envoi en cours...' : "Créer et envoyer l'invitation"}
               </button>
@@ -285,12 +324,18 @@ function EmployesPage() {
         </div>
       )}
 
-      {/* ── TABLEAU ── */}
+      {/* ── LISTE ── */}
       <div style={s.tableCard}>
 
         {/* Barre de recherche */}
-        <div style={s.tableToolbar}>
-          <div style={s.searchWrap}>
+        <div style={{
+          ...s.tableToolbar,
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 10 : 0,
+          padding: isMobile ? '12px 12px' : '14px 20px',
+          alignItems: isMobile ? 'stretch' : 'center',
+        }}>
+          <div style={{ ...s.searchWrap, minWidth: isMobile ? 'unset' : 280 }}>
             <Search size={14} color={MUTED} strokeWidth={1.8} />
             <input
               value={search}
@@ -304,22 +349,114 @@ function EmployesPage() {
               </button>
             )}
           </div>
-          <span style={s.resultCount}>
+          <span style={{ ...s.resultCount, textAlign: isMobile ? 'right' : 'left' }}>
             {filtered.length} résultat{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>
 
-        {/* Table */}
+        {/* Contenu */}
         {loading ? (
           <p style={s.loading}>Chargement...</p>
         ) : filtered.length === 0 ? (
           <div style={s.empty}>
             <Users size={28} color={MUTED} strokeWidth={1.3} />
             <p style={{ margin: '10px 0 0', color: MUTED, fontSize: 13 }}>
-              {search ? 'Aucun résultat pour cette recherche.' : 'Aucun employé pour l\'instant.'}
+              {search ? 'Aucun résultat pour cette recherche.' : "Aucun employé pour l'instant."}
             </p>
           </div>
+        ) : isMobile ? (
+          /* ── Cartes mobiles ── */
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {filtered.map((e, i) => {
+              const initiales = e.nom_complet
+                ? e.nom_complet.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                : '?'
+              const isActif   = e.actif && !e.bloque
+              const isBloque  = e.bloque
+              const isAttente = !e.actif && !e.bloque
+
+              return (
+                <div
+                  key={e.id}
+                  style={{
+                    padding: '14px 14px',
+                    background: i % 2 === 0 ? WHITE : '#FAFBFC',
+                    borderBottom: i < filtered.length - 1 ? `1px solid ${BORDER}` : 'none',
+                  }}
+                >
+                  {/* Ligne 1 : avatar + nom + statut */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <div style={{
+                      ...s.avatar,
+                      background: isBloque ? '#FEF1F1' : isActif ? '#EBF5EF' : '#FBF5E9',
+                      color:      isBloque ? '#c0392b' : isActif ? GREEN : GOLD,
+                    }}>
+                      {initiales}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: NAVY, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {e.nom_complet}
+                      </div>
+                      <div style={{ marginTop: 3 }}>
+                        <RoleBadge role={e.role} />
+                      </div>
+                    </div>
+                    <StatutBadge employe={e} />
+                  </div>
+
+                  {/* Ligne 2 : contact */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12, paddingLeft: 44 }}>
+                    <span style={s.metaItem}>
+                      <Mail size={11} color={MUTED} strokeWidth={1.8} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.email}</span>
+                    </span>
+                    {e.telephone && (
+                      <span style={s.metaItem}>
+                        <Phone size={11} color={MUTED} strokeWidth={1.8} />
+                        {e.telephone}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Ligne 3 : actions */}
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    {isAttente && (
+                      <button
+                        onClick={() => handleRenvoyer(e)}
+                        disabled={renvoyant === e.id}
+                        style={{ ...s.btnAction, background: '#FBF5E9', color: GOLD, border: `1px solid #E8D5A3`, opacity: renvoyant === e.id ? 0.6 : 1 }}
+                      >
+                        <RefreshCw size={12} strokeWidth={2} />
+                        <span>{renvoyant === e.id ? 'Envoi...' : 'Renvoyer'}</span>
+                      </button>
+                    )}
+                    {isActif && (
+                      <button
+                        onClick={() => handleDesactiver(e)}
+                        disabled={desactivant === e.id}
+                        style={{ ...s.btnAction, background: '#FEF1F1', color: '#c0392b', border: '1px solid #FBBCBC', opacity: desactivant === e.id ? 0.6 : 1 }}
+                      >
+                        <ShieldOff size={12} strokeWidth={2} />
+                        <span>{desactivant === e.id ? '...' : 'Bloquer'}</span>
+                      </button>
+                    )}
+                    {isBloque && (
+                      <button
+                        onClick={() => handleActiver(e)}
+                        disabled={activant === e.id}
+                        style={{ ...s.btnAction, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5`, opacity: activant === e.id ? 0.6 : 1 }}
+                      >
+                        <ShieldCheck size={12} strokeWidth={2} />
+                        <span>{activant === e.id ? '...' : 'Réactiver'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         ) : (
+          /* ── Table desktop ── */
           <table style={s.table}>
             <thead>
               <tr>
@@ -335,9 +472,9 @@ function EmployesPage() {
                 const initiales = e.nom_complet
                   ? e.nom_complet.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
                   : '?'
-                const isActif    = e.actif && !e.bloque
-                const isBloque   = e.bloque
-                const isAttente  = !e.actif && !e.bloque
+                const isActif   = e.actif && !e.bloque
+                const isBloque  = e.bloque
+                const isAttente = !e.actif && !e.bloque
 
                 return (
                   <tr
@@ -346,7 +483,6 @@ function EmployesPage() {
                     onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
                     onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
                   >
-                    {/* Employé */}
                     <td style={s.td}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{
@@ -356,67 +492,38 @@ function EmployesPage() {
                         }}>
                           {initiales}
                         </div>
-                        <span style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>
-                          {e.nom_complet}
-                        </span>
+                        <span style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{e.nom_complet}</span>
                       </div>
                     </td>
-
-                    {/* Contact */}
                     <td style={s.td}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <span style={{ ...s.metaItem }}>
-                          <Mail size={11} color={MUTED} strokeWidth={1.8} />
-                          {e.email}
-                        </span>
+                        <span style={s.metaItem}><Mail size={11} color={MUTED} strokeWidth={1.8} />{e.email}</span>
                         {e.telephone && (
-                          <span style={{ ...s.metaItem }}>
-                            <Phone size={11} color={MUTED} strokeWidth={1.8} />
-                            {e.telephone}
-                          </span>
+                          <span style={s.metaItem}><Phone size={11} color={MUTED} strokeWidth={1.8} />{e.telephone}</span>
                         )}
                       </div>
                     </td>
-
-                    {/* Rôle */}
-                    <td style={s.td}>
-                      <RoleBadge role={e.role} />
-                    </td>
-
-                    {/* Statut */}
-                    <td style={s.td}>
-                      <StatutBadge employe={e} />
-                    </td>
-
-                    {/* Actions */}
+                    <td style={s.td}><RoleBadge role={e.role} /></td>
+                    <td style={s.td}><StatutBadge employe={e} /></td>
                     <td style={{ ...s.td, textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                         {isAttente && (
-                          <button
-                            onClick={() => handleRenvoyer(e)}
-                            disabled={renvoyant === e.id}
-                            style={{ ...s.btnAction, background: '#FBF5E9', color: GOLD, border: `1px solid #E8D5A3`, opacity: renvoyant === e.id ? 0.6 : 1 }}
-                          >
+                          <button onClick={() => handleRenvoyer(e)} disabled={renvoyant === e.id}
+                            style={{ ...s.btnAction, background: '#FBF5E9', color: GOLD, border: `1px solid #E8D5A3`, opacity: renvoyant === e.id ? 0.6 : 1 }}>
                             <RefreshCw size={12} strokeWidth={2} />
                             <span>{renvoyant === e.id ? 'Envoi...' : 'Renvoyer'}</span>
                           </button>
                         )}
                         {isActif && (
-                          <button
-                            onClick={() => handleDesactiver(e)}
-                            disabled={desactivant === e.id}
-                            style={{ ...s.btnAction, background: '#FEF1F1', color: '#c0392b', border: '1px solid #FBBCBC', opacity: desactivant === e.id ? 0.6 : 1 }}
-                          >
+                          <button onClick={() => handleDesactiver(e)} disabled={desactivant === e.id}
+                            style={{ ...s.btnAction, background: '#FEF1F1', color: '#c0392b', border: '1px solid #FBBCBC', opacity: desactivant === e.id ? 0.6 : 1 }}>
                             <ShieldOff size={12} strokeWidth={2} />
                             <span>{desactivant === e.id ? '...' : 'Bloquer'}</span>
                           </button>
                         )}
                         {isBloque && (
-                          <button
-                            onClick={() => handleActiver(e)}
-                            disabled={activant === e.id}
-                            style={{ ...s.btnAction, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5`, opacity: activant === e.id ? 0.6 : 1 }}
-                          >
+                          <button onClick={() => handleActiver(e)} disabled={activant === e.id}
+                            style={{ ...s.btnAction, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5`, opacity: activant === e.id ? 0.6 : 1 }}>
                             <ShieldCheck size={12} strokeWidth={2} />
                             <span>{activant === e.id ? '...' : 'Réactiver'}</span>
                           </button>
@@ -436,58 +543,47 @@ function EmployesPage() {
 
 // ─── STYLES ───────────────────────────────────
 const s = {
-  page:    { padding: '32px 28px', maxWidth: 1100, margin: '0 auto' },
-
-  header:        { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  eyebrow:       { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
-  title:         { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
-  titleUnderline:{ width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
-
-  btnPrimary:  { display: 'flex', alignItems: 'center', gap: 8, background: NAVY, color: WHITE, border: 'none', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
-  btnSecondary:{ display: 'flex', alignItems: 'center', gap: 8, background: BG,   color: NAVY,  border: 'none', padding: '11px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer' },
-
-  statsRow: { display: 'flex', gap: 12, marginBottom: 24 },
-  statCard: { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1 },
-  statIcon: { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  statVal:  { fontSize: 20, fontWeight: 800, color: NAVY, lineHeight: 1 },
-  statLabel:{ fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 2 },
-
-  alertSuccess: { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13, fontWeight: 500 },
-  alertError:   { background: '#FEF1F1', border: '1px solid #FBBCBC', color: '#c0392b', borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13 },
-
-  formCard:    { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24 },
-  formHeader:  { marginBottom: 14 },
-  formTitle:   { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
-  formDivider: { height: 1, background: BORDER, marginBottom: 18 },
-  formActions: { marginTop: 8 },
-
-  row:        { display: 'flex', gap: 12 },
-  fieldGroup: { marginBottom: 16, flex: 1 },
-  label:      { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
-  input:      { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE },
-  select:     { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', background: WHITE },
-  errorMsg:   { color: '#c0392b', fontSize: 11, marginTop: 4, display: 'block' },
-
-  tableCard:    { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' },
-  tableToolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${BORDER}` },
-  searchWrap:   { display: 'flex', alignItems: 'center', gap: 8, background: BG, border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: '8px 14px', minWidth: 280 },
-  searchInput:  { border: 'none', outline: 'none', fontSize: 13, color: NAVY, background: 'transparent', flex: 1 },
-  clearBtn:     { background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' },
-  resultCount:  { fontSize: 12, color: MUTED, fontWeight: 500 },
-
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th:    { padding: '11px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}` },
-  tr:    { borderBottom: `1px solid ${BG}`, transition: 'background 0.1s' },
-  td:    { padding: '13px 16px', fontSize: 13, verticalAlign: 'middle' },
-
-  avatar:   { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, letterSpacing: '0.5px', flexShrink: 0 },
-  metaItem: { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: MUTED },
-  badge:    { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 },
-
-  btnAction: { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.2s' },
-
-  loading: { color: MUTED, textAlign: 'center', padding: 48, fontSize: 13 },
-  empty:   { textAlign: 'center', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  page:           { padding: '32px 28px', maxWidth: 1100, margin: '0 auto' },
+  header:         { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  eyebrow:        { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
+  title:          { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
+  titleUnderline: { width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
+  btnPrimary:     { display: 'flex', alignItems: 'center', gap: 8, background: NAVY, color: WHITE, border: 'none', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  btnSecondary:   { display: 'flex', alignItems: 'center', gap: 8, background: BG,   color: NAVY,  border: 'none', padding: '11px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer' },
+  statsRow:       { display: 'flex', gap: 12, marginBottom: 24 },
+  statCard:       { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1 },
+  statIcon:       { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statVal:        { fontSize: 20, fontWeight: 800, color: NAVY, lineHeight: 1 },
+  statLabel:      { fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 2 },
+  alertSuccess:   { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13, fontWeight: 500 },
+  alertError:     { background: '#FEF1F1', border: '1px solid #FBBCBC', color: '#c0392b', borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13 },
+  formCard:       { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24 },
+  formHeader:     { marginBottom: 14 },
+  formTitle:      { fontSize: 11, fontWeight: 700, color: NAVY, textTransform: 'uppercase', letterSpacing: '1.5px' },
+  formDivider:    { height: 1, background: BORDER, marginBottom: 18 },
+  formActions:    { marginTop: 8 },
+  row:            { display: 'flex', gap: 12 },
+  fieldGroup:     { marginBottom: 16, flex: 1 },
+  label:          { display: 'block', fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 },
+  input:          { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', outline: 'none', background: WHITE },
+  select:         { width: '100%', padding: '10px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, fontSize: 13, color: NAVY, boxSizing: 'border-box', background: WHITE },
+  errorMsg:       { color: '#c0392b', fontSize: 11, marginTop: 4, display: 'block' },
+  tableCard:      { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' },
+  tableToolbar:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${BORDER}` },
+  searchWrap:     { display: 'flex', alignItems: 'center', gap: 8, background: BG, border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: '8px 14px', minWidth: 280 },
+  searchInput:    { border: 'none', outline: 'none', fontSize: 13, color: NAVY, background: 'transparent', flex: 1 },
+  clearBtn:       { background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' },
+  resultCount:    { fontSize: 12, color: MUTED, fontWeight: 500 },
+  table:          { width: '100%', borderCollapse: 'collapse' },
+  th:             { padding: '11px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}` },
+  tr:             { borderBottom: `1px solid ${BG}`, transition: 'background 0.1s' },
+  td:             { padding: '13px 16px', fontSize: 13, verticalAlign: 'middle' },
+  avatar:         { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, letterSpacing: '0.5px', flexShrink: 0 },
+  metaItem:       { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: MUTED },
+  badge:          { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 },
+  btnAction:      { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.2s' },
+  loading:        { color: MUTED, textAlign: 'center', padding: 48, fontSize: 13 },
+  empty:          { textAlign: 'center', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center' },
 }
 
 export default EmployesPage

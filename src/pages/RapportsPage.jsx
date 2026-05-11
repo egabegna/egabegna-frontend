@@ -24,6 +24,138 @@ const ROLE_CONFIG = {
 const fmt  = n => Number(n || 0).toLocaleString('fr-FR')
 const fmtD = s => s ? new Date(s).toLocaleDateString('fr-FR') : '—'
 
+// ─── Responsive CSS ───────────────────────────
+const RESPONSIVE_CSS = `
+  .rp-page { padding: 32px 28px; max-width: 1100px; margin: 0 auto; }
+
+  .rp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 12px;
+  }
+
+  .rp-tabs {
+    display: flex;
+    border-bottom: 1.5px solid ${BORDER};
+    margin-bottom: 20px;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rp-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+    border-bottom: 2.5px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .rp-filtres-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: ${WHITE};
+    border: 1px solid ${BORDER};
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .rp-filtres-inner {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .rp-stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .rp-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: ${WHITE};
+    border: 1px solid ${BORDER};
+    border-radius: 12px;
+    padding: 14px 18px;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  /* Scrollable table wrapper */
+  .rp-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Mobile row cards — hidden on desktop */
+  .rp-card-list { display: none; flex-direction: column; gap: 10px; padding: 12px; }
+
+  /* Tab labels */
+  .rp-tab-label { display: inline; }
+
+  @media (max-width: 640px) {
+    .rp-page { padding: 16px 14px; }
+
+    .rp-header { align-items: center; }
+
+    .rp-tab { padding: 10px 12px; font-size: 12px; }
+    .rp-tab-label { display: none; }
+
+    .rp-filtres-card {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .rp-filtres-inner { flex-wrap: wrap; gap: 8px; }
+
+    /* Generate button full width */
+    .rp-btn-generate { width: 100%; justify-content: center; }
+
+    .rp-stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .rp-stat-card { min-width: unset; padding: 10px 12px; gap: 8px; border-radius: 10px; }
+
+    /* Hide desktop table, show cards */
+    .rp-table-scroll { display: none; }
+    .rp-card-list    { display: flex; }
+  }
+
+  @media (max-width: 380px) {
+    .rp-stats-row { grid-template-columns: 1fr; }
+  }
+`
+
+function InjectStyles() {
+  useEffect(() => {
+    const id = 'rp-responsive-styles'
+    if (!document.getElementById(id)) {
+      const el = document.createElement('style')
+      el.id = id
+      el.textContent = RESPONSIVE_CSS
+      document.head.appendChild(el)
+    }
+  }, [])
+  return null
+}
+
 function RoleBadge({ role }) {
   const c = ROLE_CONFIG[role] || { bg: BG, color: MUTED }
   return <span style={{ ...s.badge, background: c.bg, color: c.color }}>{role}</span>
@@ -52,9 +184,7 @@ function BoutonExport() {
         <Download size={14} strokeWidth={2} />
         <span>Exporter</span>
       </button>
-      {showTip && (
-        <div style={s.tooltip}>Disponible en v2</div>
-      )}
+      {showTip && <div style={s.tooltip}>Disponible en v2</div>}
     </div>
   )
 }
@@ -72,11 +202,6 @@ function CustomSelect({ name, value, onChange, options }) {
 
   const selected = options.find(o => o.value === value) || options[0]
 
-  const handleSelect = (val) => {
-    onChange({ target: { name, value: val } })
-    setOpen(false)
-  }
-
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
@@ -87,23 +212,15 @@ function CustomSelect({ name, value, onChange, options }) {
         <span style={{ flex: 1, textAlign: 'left', color: NAVY, fontSize: 12, fontWeight: 600 }}>
           {selected?.label}
         </span>
-        <ChevronDown
-          size={13} color={MUTED} strokeWidth={2}
-          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
-        />
+        <ChevronDown size={13} color={MUTED} strokeWidth={2}
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
       </button>
       {open && (
         <div style={cs.dropdown}>
           {options.map(o => (
-            <div
-              key={o.value}
-              onClick={() => handleSelect(o.value)}
-              style={{
-                ...cs.option,
-                background: value === o.value ? '#EEF1F8' : WHITE,
-                color:      value === o.value ? NAVY : '#6B7A99',
-                fontWeight: value === o.value ? 700 : 400,
-              }}
+            <div key={o.value}
+              onClick={() => { onChange({ target: { name, value: o.value } }); setOpen(false) }}
+              style={{ ...cs.option, background: value === o.value ? '#EEF1F8' : WHITE, color: value === o.value ? NAVY : '#6B7A99', fontWeight: value === o.value ? 700 : 400 }}
               onMouseEnter={e => { if (value !== o.value) e.currentTarget.style.background = BG }}
               onMouseLeave={e => { if (value !== o.value) e.currentTarget.style.background = WHITE }}
             >
@@ -118,46 +235,10 @@ function CustomSelect({ name, value, onChange, options }) {
 }
 
 const cs = {
-  trigger: {
-    display:      'flex',
-    alignItems:   'center',
-    gap:          8,
-    padding:      '8px 12px',
-    borderRadius: 9,
-    border:       `1.5px solid ${BORDER}`,
-    background:   WHITE,
-    cursor:       'pointer',
-    minWidth:     130,
-    transition:   'border-color 0.15s',
-  },
-  dropdown: {
-    position:     'absolute',
-    top:          'calc(100% + 4px)',
-    left:         0,
-    minWidth:     '100%',
-    background:   WHITE,
-    border:       `1.5px solid ${BORDER}`,
-    borderRadius: 10,
-    boxShadow:    '0 8px 24px rgba(0,0,0,0.08)',
-    zIndex:       20,
-    overflow:     'hidden',
-  },
-  option: {
-    display:    'flex',
-    alignItems: 'center',
-    gap:        8,
-    padding:    '9px 14px',
-    fontSize:   12,
-    cursor:     'pointer',
-    transition: 'background 0.1s',
-  },
-  dot: {
-    width:        6,
-    height:       6,
-    borderRadius: '50%',
-    background:   GOLD,
-    flexShrink:   0,
-  },
+  trigger:  { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, background: WHITE, cursor: 'pointer', minWidth: 130, transition: 'border-color 0.15s' },
+  dropdown: { position: 'absolute', top: 'calc(100% + 4px)', left: 0, minWidth: '100%', background: WHITE, border: `1.5px solid ${BORDER}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', zIndex: 20, overflow: 'hidden' },
+  option:   { display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', fontSize: 12, cursor: 'pointer', transition: 'background 0.1s' },
+  dot:      { width: 6, height: 6, borderRadius: '50%', background: GOLD, flexShrink: 0 },
 }
 
 // ─── Calendrier custom ────────────────────────
@@ -175,20 +256,11 @@ function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const selected = value ? new Date(value) : null
-
-  const handleSelect = (date) => {
-    onChange({ target: { name, value: date.toISOString().split('T')[0] } })
-    setOpen(false)
-  }
-
-  const handleClear = (e) => {
-    e.stopPropagation()
-    onChange({ target: { name, value: '' } })
-  }
-
-  const prevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
-  const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+  const selected    = value ? new Date(value) : null
+  const handleSelect = (date) => { onChange({ target: { name, value: date.toISOString().split('T')[0] } }); setOpen(false) }
+  const handleClear  = (e)    => { e.stopPropagation(); onChange({ target: { name, value: '' } }) }
+  const prevMonth    = ()     => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+  const nextMonth    = ()     => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
 
   const firstDay    = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
   const lastDay     = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
@@ -207,11 +279,8 @@ function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        style={{ ...dp.trigger, borderColor: open ? NAVY : BORDER }}
-      >
+      <button type="button" onClick={() => setOpen(v => !v)}
+        style={{ ...dp.trigger, borderColor: open ? NAVY : BORDER }}>
         <Calendar size={13} color={value ? NAVY : MUTED} strokeWidth={1.8} style={{ flexShrink: 0 }} />
         <span style={{ flex: 1, textAlign: 'left', color: value ? NAVY : MUTED, fontSize: 12, fontWeight: value ? 600 : 400 }}>
           {displayValue || placeholder}
@@ -224,36 +293,18 @@ function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
       </button>
 
       {open && (
-        <div style={dp.calendar}>
+        <div style={{ ...dp.calendar, right: 0, left: 'auto' }}>
           <div style={dp.calHeader}>
-            <button onClick={prevMonth} style={dp.navBtn} type="button">
-              <ChevronLeft size={14} color={NAVY} strokeWidth={2} />
-            </button>
-            <span style={dp.monthLabel}>
-              {MOIS_FR_CAL[viewDate.getMonth()]} {viewDate.getFullYear()}
-            </span>
-            <button onClick={nextMonth} style={dp.navBtn} type="button">
-              <ChevronRight size={14} color={NAVY} strokeWidth={2} />
-            </button>
+            <button onClick={prevMonth} style={dp.navBtn} type="button"><ChevronLeft size={14} color={NAVY} strokeWidth={2} /></button>
+            <span style={dp.monthLabel}>{MOIS_FR_CAL[viewDate.getMonth()]} {viewDate.getFullYear()}</span>
+            <button onClick={nextMonth} style={dp.navBtn} type="button"><ChevronRight size={14} color={NAVY} strokeWidth={2} /></button>
           </div>
-
-          <div style={dp.weekRow}>
-            {JOURS_CAL.map(j => <div key={j} style={dp.weekDay}>{j}</div>)}
-          </div>
-
+          <div style={dp.weekRow}>{JOURS_CAL.map(j => <div key={j} style={dp.weekDay}>{j}</div>)}</div>
           <div style={dp.grid}>
             {cells.map((d, i) => (
-              <div
-                key={i}
+              <div key={i}
                 onClick={() => d && handleSelect(new Date(viewDate.getFullYear(), viewDate.getMonth(), d))}
-                style={{
-                  ...dp.cell,
-                  background:   d && isSelected(d) ? NAVY : d && isToday(d) ? '#EEF1F8' : 'transparent',
-                  color:        d && isSelected(d) ? WHITE : d && isToday(d) ? NAVY : d ? '#374151' : 'transparent',
-                  fontWeight:   d && (isSelected(d) || isToday(d)) ? 700 : 400,
-                  cursor:       d ? 'pointer' : 'default',
-                  borderRadius: 8,
-                }}
+                style={{ ...dp.cell, background: d && isSelected(d) ? NAVY : d && isToday(d) ? '#EEF1F8' : 'transparent', color: d && isSelected(d) ? WHITE : d && isToday(d) ? NAVY : d ? '#374151' : 'transparent', fontWeight: d && (isSelected(d) || isToday(d)) ? 700 : 400, cursor: d ? 'pointer' : 'default', borderRadius: 8 }}
                 onMouseEnter={e => { if (d && !isSelected(d)) e.currentTarget.style.background = BG }}
                 onMouseLeave={e => { if (d && !isSelected(d)) e.currentTarget.style.background = isToday(d) ? '#EEF1F8' : 'transparent' }}
               >
@@ -261,11 +312,8 @@ function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
               </div>
             ))}
           </div>
-
           <div style={dp.footer}>
-            <button onClick={() => handleSelect(todayD)} style={dp.todayBtn} type="button">
-              Aujourd'hui
-            </button>
+            <button onClick={() => handleSelect(todayD)} style={dp.todayBtn} type="button">Aujourd'hui</button>
           </div>
         </div>
       )}
@@ -274,62 +322,71 @@ function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
 }
 
 const dp = {
-  trigger: {
-    display:      'flex',
-    alignItems:   'center',
-    gap:          7,
-    padding:      '8px 12px',
-    borderRadius: 9,
-    border:       `1.5px solid ${BORDER}`,
-    background:   WHITE,
-    cursor:       'pointer',
-    minWidth:     145,
-    transition:   'border-color 0.15s',
-  },
-  clearBtn: {
-    background: 'none',
-    border:     'none',
-    cursor:     'pointer',
-    padding:    0,
-    display:    'flex',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  calendar: {
-    position:     'absolute',
-    top:          'calc(100% + 4px)',
-    left:         0,
-    background:   WHITE,
-    border:       `1.5px solid ${BORDER}`,
-    borderRadius: 14,
-    boxShadow:    '0 12px 40px rgba(0,0,0,0.10)',
-    zIndex:       30,
-    padding:      14,
-    width:        260,
-  },
-  calHeader: {
-    display:        'flex',
-    alignItems:     'center',
-    justifyContent: 'space-between',
-    marginBottom:   10,
-  },
-  monthLabel: { fontSize: 13, fontWeight: 700, color: NAVY, letterSpacing: '0.3px' },
-  navBtn: {
-    background:     'none',
-    border:         'none',
-    cursor:         'pointer',
-    padding:        4,
-    borderRadius:   6,
-    display:        'flex',
-    alignItems:     'center',
-    justifyContent: 'center',
-  },
-  weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 },
-  weekDay: { textAlign: 'center', fontSize: 10, fontWeight: 700, color: MUTED, letterSpacing: '0.5px', padding: '4px 0', textTransform: 'uppercase' },
-  grid:    { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 },
-  cell:    { textAlign: 'center', fontSize: 12, padding: '6px 2px', transition: 'background 0.1s', userSelect: 'none' },
-  footer:  { marginTop: 10, paddingTop: 8, borderTop: `1px solid ${BORDER}`, textAlign: 'center' },
-  todayBtn:{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: GOLD, fontWeight: 700, padding: '4px 10px', borderRadius: 6 },
+  trigger:   { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`, background: WHITE, cursor: 'pointer', minWidth: 130, transition: 'border-color 0.15s' },
+  clearBtn:  { background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', flexShrink: 0 },
+  calendar:  { position: 'absolute', top: 'calc(100% + 4px)', background: WHITE, border: `1.5px solid ${BORDER}`, borderRadius: 14, boxShadow: '0 12px 40px rgba(0,0,0,0.10)', zIndex: 30, padding: 14, width: 248 },
+  calHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  monthLabel:{ fontSize: 13, fontWeight: 700, color: NAVY, letterSpacing: '0.3px' },
+  navBtn:    { background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  weekRow:   { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 },
+  weekDay:   { textAlign: 'center', fontSize: 10, fontWeight: 700, color: MUTED, letterSpacing: '0.5px', padding: '4px 0', textTransform: 'uppercase' },
+  grid:      { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 },
+  cell:      { textAlign: 'center', fontSize: 12, padding: '6px 2px', transition: 'background 0.1s', userSelect: 'none' },
+  footer:    { marginTop: 10, paddingTop: 8, borderTop: `1px solid ${BORDER}`, textAlign: 'center' },
+  todayBtn:  { background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: GOLD, fontWeight: 700, padding: '4px 10px', borderRadius: 6 },
+}
+
+// ─── Mobile row cards ─────────────────────────
+function VenteCard({ p, i }) {
+  return (
+    <div style={{ background: i % 2 === 0 ? WHITE : '#FAFBFC', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 13, color: MUTED }}>{p.periode ? fmtD(p.periode) : '—'}</span>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{fmt(p.ca)} FCFA</div>
+        <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{p.nb_ventes} vente{p.nb_ventes !== 1 ? 's' : ''}</div>
+      </div>
+    </div>
+  )
+}
+
+function ProduitCard({ p, i }) {
+  return (
+    <div style={{ background: i % 2 === 0 ? WHITE : '#FAFBFC', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <RangBadge rang={p.rang} />
+          <span style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{p.produit_nom}</span>
+        </div>
+        <span style={{ fontSize: 12, color: MUTED, fontWeight: 600 }}>{p.qte_vendue} unités</span>
+      </div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: NAVY, fontWeight: 700 }}>CA : {fmt(p.ca)} FCFA</span>
+        <span style={{ fontSize: 12, color: GREEN, fontWeight: 700 }}>Bén. : {fmt(p.benefice)} FCFA</span>
+      </div>
+    </div>
+  )
+}
+
+function EmployeCard({ e, i }) {
+  const initiales = e.employe_nom?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?'
+  return (
+    <div style={{ background: i % 2 === 0 ? WHITE : '#FAFBFC', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ ...s.avatar, background: '#EEF1F8', color: NAVY }}>{initiales}</div>
+          <div>
+            <div style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{e.employe_nom}</div>
+            <RoleBadge role={e.employe_role} />
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{fmt(e.ca_total)} FCFA</div>
+          <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{e.nb_ventes} vente{e.nb_ventes !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: MUTED }}>Panier moyen : {fmt(e.panier_moyen)} FCFA</div>
+    </div>
+  )
 }
 
 // ─── Page principale ──────────────────────────
@@ -369,10 +426,11 @@ function RapportsPage() {
   }
 
   return (
-    <div style={s.page}>
+    <div className="rp-page">
+      <InjectStyles />
 
-      {/* ── HEADER ── */}
-      <div style={s.header}>
+      {/* HEADER */}
+      <div className="rp-header">
         <div>
           <p style={s.eyebrow}>Analyse</p>
           <h1 style={s.title}>Rapports</h1>
@@ -381,46 +439,36 @@ function RapportsPage() {
         <BoutonExport />
       </div>
 
-      {/* ── ONGLETS ── */}
-      <div style={s.tabs}>
+      {/* ONGLETS */}
+      <div className="rp-tabs">
         {ONGLETS.map(({ key, label, Icon }) => (
           <button
             key={key}
             onClick={() => { setOnglet(key); setData(null) }}
+            className="rp-tab"
             style={{
-              ...s.tab,
               color:        onglet === key ? NAVY  : MUTED,
               borderBottom: onglet === key ? `2.5px solid ${GOLD}` : '2.5px solid transparent',
               fontWeight:   onglet === key ? 700   : 500,
             }}
           >
             <Icon size={13} strokeWidth={2} />
-            <span>{label}</span>
+            <span className="rp-tab-label">{label}</span>
           </button>
         ))}
       </div>
 
-      {/* ── FILTRES ── */}
-      <div style={s.filtresCard}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* FILTRES */}
+      <div className="rp-filtres-card">
+        <div className="rp-filtres-inner">
           <span style={s.filtreLabel}>Période</span>
-          <CustomDatePicker
-            name="date_debut"
-            value={periode.date_debut}
-            onChange={handleDateChange}
-            placeholder="Date début"
-          />
+          <CustomDatePicker name="date_debut" value={periode.date_debut} onChange={handleDateChange} placeholder="Début" />
           <span style={{ color: MUTED, fontSize: 12, fontWeight: 600 }}>→</span>
-          <CustomDatePicker
-            name="date_fin"
-            value={periode.date_fin}
-            onChange={handleDateChange}
-            placeholder="Date fin"
-          />
+          <CustomDatePicker name="date_fin"   value={periode.date_fin}   onChange={handleDateChange} placeholder="Fin"   />
 
           {onglet === 'ventes' && (
             <>
-              <div style={{ width: 1, height: 22, background: BORDER }} />
+              <div style={{ width: 1, height: 22, background: BORDER, flexShrink: 0 }} />
               <span style={s.filtreLabel}>Grouper</span>
               <CustomSelect
                 name="groupBy"
@@ -436,16 +484,21 @@ function RapportsPage() {
           )}
         </div>
 
-        <button onClick={charger} disabled={loading} style={{ ...s.btnPrimary, opacity: loading ? 0.6 : 1 }}>
+        <button
+          onClick={charger}
+          disabled={loading}
+          className="rp-btn-generate"
+          style={{ ...s.btnPrimary, opacity: loading ? 0.6 : 1 }}
+        >
           <Play size={13} strokeWidth={2.5} style={{ fill: WHITE }} />
           <span>{loading ? 'Calcul...' : 'Générer'}</span>
         </button>
       </div>
 
-      {/* ── CHARGEMENT ── */}
+      {/* CHARGEMENT */}
       {loading && <p style={s.loading}>Calcul en cours...</p>}
 
-      {/* ── ÉTAT VIDE ── */}
+      {/* ÉTAT VIDE */}
       {!data && !loading && (
         <div style={s.tableCard}>
           <div style={s.empty}>
@@ -457,22 +510,22 @@ function RapportsPage() {
         </div>
       )}
 
-      {/* ── VENTES ── */}
+      {/* VENTES */}
       {data && onglet === 'ventes' && (
         <div>
-          <div style={s.statsRow}>
+          <div className="rp-stats-row">
             {[
-              { label: 'CA total',   val: `${fmt(data.totaux?.ca)} FCFA`,        Icon: TrendingUp, bg: '#EEF1F8', color: NAVY         },
-              { label: 'Nb ventes',  val: data.totaux?.nb_ventes || 0,            Icon: BarChart2,  bg: '#EBF5EF', color: GREEN        },
-              { label: 'Bénéfice',   val: `${fmt(data.totaux?.benefice)} FCFA`,   Icon: Trophy,     bg: '#FBF5E9', color: GOLD         },
-              { label: 'Coût achat', val: `${fmt(data.totaux?.cout_achat)} FCFA`, Icon: Package,    bg: '#FEF1F1', color: '#c0392b'    },
+              { label: 'CA total',   val: `${fmt(data.totaux?.ca)} FCFA`,        Icon: TrendingUp, bg: '#EEF1F8', color: NAVY      },
+              { label: 'Nb ventes',  val: data.totaux?.nb_ventes || 0,            Icon: BarChart2,  bg: '#EBF5EF', color: GREEN     },
+              { label: 'Bénéfice',   val: `${fmt(data.totaux?.benefice)} FCFA`,   Icon: Trophy,     bg: '#FBF5E9', color: GOLD      },
+              { label: 'Coût achat', val: `${fmt(data.totaux?.cout_achat)} FCFA`, Icon: Package,    bg: '#FEF1F1', color: '#c0392b' },
             ].map(({ label, val, Icon, bg, color }) => (
-              <div key={label} style={s.statCard}>
+              <div key={label} className="rp-stat-card">
                 <div style={{ ...s.statIcon, background: bg }}>
                   <Icon size={16} color={color} strokeWidth={1.8} />
                 </div>
-                <div>
-                  <div style={{ ...s.statVal, color }}>{val}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...s.statVal, color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</div>
                   <div style={s.statLabel}>{label}</div>
                 </div>
               </div>
@@ -485,36 +538,43 @@ function RapportsPage() {
                 Évolution · {groupBy === 'day' ? 'par jour' : groupBy === 'week' ? 'par semaine' : 'par mois'}
               </span>
             </div>
-            <div style={{ padding: '16px 20px 8px' }}>
-              <MiniChart points={data.points || []} color={NAVY} height={140} />
+            <div style={{ padding: '16px 16px 8px' }}>
+              <MiniChart points={data.points || []} color={NAVY} height={120} />
             </div>
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  {["Période", "Chiffre d'affaires", "Nb ventes"].map(h => (
-                    <th key={h} style={s.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(data.points || []).map((p, i) => (
-                  <tr key={i}
-                    style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
-                    onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
-                    onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
-                  >
-                    <td style={s.td}>{p.periode ? fmtD(p.periode) : '—'}</td>
-                    <td style={s.td}><span style={{ fontWeight: 700, color: NAVY }}>{fmt(p.ca)} FCFA</span></td>
-                    <td style={s.td}>{p.nb_ventes}</td>
+
+            {/* Desktop table */}
+            <div className="rp-table-scroll">
+              <table style={{ ...s.table, minWidth: 400 }}>
+                <thead>
+                  <tr>
+                    {["Période", "Chiffre d'affaires", "Nb ventes"].map(h => (
+                      <th key={h} style={s.th}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(data.points || []).map((p, i) => (
+                    <tr key={i} style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
+                      onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
+                      onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
+                    >
+                      <td style={s.td}>{p.periode ? fmtD(p.periode) : '—'}</td>
+                      <td style={s.td}><span style={{ fontWeight: 700, color: NAVY }}>{fmt(p.ca)} FCFA</span></td>
+                      <td style={s.td}>{p.nb_ventes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile cards */}
+            <div className="rp-card-list">
+              {(data.points || []).map((p, i) => <VenteCard key={i} p={p} i={i} />)}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── TOP PRODUITS ── */}
+      {/* TOP PRODUITS */}
       {data && onglet === 'produits' && (
         <div style={s.tableCard}>
           <div style={s.tableToolbar}>
@@ -527,35 +587,41 @@ function RapportsPage() {
               <p style={{ margin: '10px 0 0', color: MUTED, fontSize: 13 }}>Aucune vente sur la période.</p>
             </div>
           ) : (
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  {['Rang', 'Produit', 'Qté vendue', 'CA', 'Bénéfice'].map(h => (
-                    <th key={h} style={s.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(data.produits || []).map((p, i) => (
-                  <tr key={p.produit_id}
-                    style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
-                    onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
-                    onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
-                  >
-                    <td style={s.td}><RangBadge rang={p.rang} /></td>
-                    <td style={{ ...s.td, fontWeight: 700, color: NAVY }}>{p.produit_nom}</td>
-                    <td style={s.td}>{p.qte_vendue}</td>
-                    <td style={s.td}><span style={{ fontWeight: 700, color: NAVY }}>{fmt(p.ca)} FCFA</span></td>
-                    <td style={s.td}><span style={{ fontWeight: 700, color: GREEN }}>{fmt(p.benefice)} FCFA</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              <div className="rp-table-scroll">
+                <table style={{ ...s.table, minWidth: 480 }}>
+                  <thead>
+                    <tr>
+                      {['Rang', 'Produit', 'Qté vendue', 'CA', 'Bénéfice'].map(h => (
+                        <th key={h} style={s.th}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(data.produits || []).map((p, i) => (
+                      <tr key={p.produit_id} style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
+                        onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
+                        onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
+                      >
+                        <td style={s.td}><RangBadge rang={p.rang} /></td>
+                        <td style={{ ...s.td, fontWeight: 700, color: NAVY }}>{p.produit_nom}</td>
+                        <td style={s.td}>{p.qte_vendue}</td>
+                        <td style={s.td}><span style={{ fontWeight: 700, color: NAVY }}>{fmt(p.ca)} FCFA</span></td>
+                        <td style={s.td}><span style={{ fontWeight: 700, color: GREEN }}>{fmt(p.benefice)} FCFA</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="rp-card-list">
+                {(data.produits || []).map((p, i) => <ProduitCard key={p.produit_id} p={p} i={i} />)}
+              </div>
+            </>
           )}
         </div>
       )}
 
-      {/* ── EMPLOYÉS ── */}
+      {/* EMPLOYÉS */}
       {data && onglet === 'employes' && (
         <div style={s.tableCard}>
           <div style={s.tableToolbar}>
@@ -568,38 +634,44 @@ function RapportsPage() {
               <p style={{ margin: '10px 0 0', color: MUTED, fontSize: 13 }}>Aucune donnée sur la période.</p>
             </div>
           ) : (
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  {['Employé', 'Rôle', 'Nb ventes', 'CA total', 'Panier moyen'].map(h => (
-                    <th key={h} style={s.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(data.employes || []).map((e, i) => {
-                  const initiales = e.employe_nom?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?'
-                  return (
-                    <tr key={e.employe_id}
-                      style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
-                      onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
-                      onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
-                    >
-                      <td style={s.td}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ ...s.avatar, background: '#EEF1F8', color: NAVY }}>{initiales}</div>
-                          <span style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{e.employe_nom}</span>
-                        </div>
-                      </td>
-                      <td style={s.td}><RoleBadge role={e.employe_role} /></td>
-                      <td style={s.td}>{e.nb_ventes}</td>
-                      <td style={s.td}><span style={{ fontWeight: 700, color: NAVY }}>{fmt(e.ca_total)} FCFA</span></td>
-                      <td style={{ ...s.td, color: MUTED }}>{fmt(e.panier_moyen)} FCFA</td>
+            <>
+              <div className="rp-table-scroll">
+                <table style={{ ...s.table, minWidth: 520 }}>
+                  <thead>
+                    <tr>
+                      {['Employé', 'Rôle', 'Nb ventes', 'CA total', 'Panier moyen'].map(h => (
+                        <th key={h} style={s.th}>{h}</th>
+                      ))}
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {(data.employes || []).map((e, i) => {
+                      const initiales = e.employe_nom?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?'
+                      return (
+                        <tr key={e.employe_id} style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
+                          onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
+                          onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
+                        >
+                          <td style={s.td}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ ...s.avatar, background: '#EEF1F8', color: NAVY }}>{initiales}</div>
+                              <span style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{e.employe_nom}</span>
+                            </div>
+                          </td>
+                          <td style={s.td}><RoleBadge role={e.employe_role} /></td>
+                          <td style={s.td}>{e.nb_ventes}</td>
+                          <td style={s.td}><span style={{ fontWeight: 700, color: NAVY }}>{fmt(e.ca_total)} FCFA</span></td>
+                          <td style={{ ...s.td, color: MUTED }}>{fmt(e.panier_moyen)} FCFA</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="rp-card-list">
+                {(data.employes || []).map((e, i) => <EmployeCard key={e.employe_id} e={e} i={i} />)}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -607,10 +679,7 @@ function RapportsPage() {
   )
 }
 
-// ─── STYLES ───────────────────────────────────
 const s = {
-  page:          { padding: '32px 28px', maxWidth: 1100, margin: '0 auto' },
-  header:        { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   eyebrow:       { fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: MUTED, margin: '0 0 6px' },
   title:         { fontSize: 26, fontWeight: 800, color: NAVY, margin: 0, letterSpacing: '-0.5px' },
   titleUnderline:{ width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
@@ -619,17 +688,11 @@ const s = {
   btnExportDisabled:{ display: 'flex', alignItems: 'center', gap: 8, background: BG, color: MUTED, border: `1px solid ${BORDER}`, padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'not-allowed' },
   tooltip:          { position: 'absolute', bottom: '110%', right: 0, background: NAVY, color: WHITE, padding: '6px 12px', borderRadius: 8, fontSize: 12, whiteSpace: 'nowrap', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
 
-  tabs: { display: 'flex', borderBottom: `1.5px solid ${BORDER}`, marginBottom: 20, gap: 4 },
-  tab:  { display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: '10px 18px', cursor: 'pointer', fontSize: 13, transition: 'all 0.15s', borderBottom: '2.5px solid transparent' },
+  filtreLabel: { fontSize: 11, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap' },
 
-  filtresCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 20px', marginBottom: 24, flexWrap: 'wrap', gap: 12 },
-  filtreLabel: { fontSize: 11, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px' },
-
-  statsRow: { display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' },
-  statCard: { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1, minWidth: 180 },
-  statIcon: { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  statVal:  { fontSize: 15, fontWeight: 800, color: NAVY, lineHeight: 1 },
-  statLabel:{ fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 3 },
+  statIcon:  { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statVal:   { fontSize: 14, fontWeight: 800, color: NAVY, lineHeight: 1 },
+  statLabel: { fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 3 },
 
   tableCard:    { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
   sectionHeader:{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}` },
@@ -638,7 +701,7 @@ const s = {
   resultCount:  { fontSize: 12, color: MUTED, fontWeight: 500 },
 
   table: { width: '100%', borderCollapse: 'collapse' },
-  th:    { padding: '11px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}` },
+  th:    { padding: '11px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', background: BG, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' },
   tr:    { borderBottom: `1px solid ${BG}`, transition: 'background 0.1s' },
   td:    { padding: '13px 16px', fontSize: 13, verticalAlign: 'middle' },
 

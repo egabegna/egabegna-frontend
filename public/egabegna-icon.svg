@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+  <defs>
+    <linearGradient id="storeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a3a6b"/>
+      <stop offset="100%" style="stop-color:#0d2144"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#b87c20"/>
+      <stop offset="100%" style="stop-color:#f0c040"/>
+    </linearGradient>
+    <linearGradient id="greenShelf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2ecc71"/>
+      <stop offset="100%" style="stop-color:#1a9e52"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0d214444"/>
+    </filter>
+    <filter id="cloudShadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#1a3a6b33"/>
+    </filter>
+    <clipPath id="awningClip">
+      <path d="M 100 210 Q 210 172 320 210 L 320 248 Q 210 265 100 248 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- ======= CIRCULAR ARC ======= -->
+  <!-- Dashed background ring -->
+  <circle cx="210" cy="210" r="160" fill="none" stroke="#1a3a6b" stroke-width="2.5"
+    stroke-dasharray="12,7" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- Navy arc: bottom-left to top -->
+  <path d="M 72 305 A 160 160 0 0 1 210 50" fill="none" stroke="#1a3a6b" stroke-width="4" stroke-linecap="round"/>
+  <!-- Green arc: top to bottom-right -->
+  <path d="M 210 50 A 160 160 0 0 1 360 285" fill="none" stroke="#2ecc71" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Arrow tip on navy arc (bottom-left) -->
+  <g transform="translate(73,308)">
+    <path d="M 0 0 L -10 -12 L 8 -8 Z" fill="#1a3a6b" transform="rotate(25)"/>
+  </g>
+
+  <!-- Dot nodes -->
+  <circle cx="80" cy="185" r="8" fill="white" stroke="#1a3a6b" stroke-width="3"/>
+  <circle cx="348" cy="155" r="8" fill="white" stroke="#2ecc71" stroke-width="3"/>
+
+  <!-- ======= CLOUD ======= -->
+  <g filter="url(#cloudShadow)">
+    <path d="
+      M 152 148
+      Q 140 108 172 97
+      Q 183 72 210 74
+      Q 234 57 260 74
+      Q 290 65 292 97
+      Q 318 97 316 128
+      Q 328 152 305 162
+      L 162 162
+      Q 140 162 152 148 Z
+    " fill="white" stroke="#1a3a6b" stroke-width="3.5" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Chart bars inside cloud -->
+  <rect x="178" y="133" width="13" height="20" rx="2" fill="#2ecc71"/>
+  <rect x="196" y="122" width="13" height="31" rx="2" fill="#2ecc71"/>
+  <rect x="214" y="111" width="13" height="42" rx="2" fill="#2ecc71"/>
+  <rect x="232" y="102" width="13" height="51" rx="2" fill="#2ecc71"/>
+
+  <!-- Gold growth arrow -->
+  <path d="M 175 145 Q 200 130 225 118 Q 248 108 268 98"
+    fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Arrow tip -->
+  <polygon points="268,91 278,103 260,106" fill="url(#goldGrad)"/>
+
+  <!-- ======= STORE BODY ======= -->
+  <rect x="112" y="208" width="196" height="155" rx="5" fill="url(#storeGrad)" filter="url(#shadow)"/>
+
+  <!-- Shelf divider -->
+  <rect x="112" y="275" width="196" height="3" fill="#ffffff15"/>
+
+  <!-- TOP SHELF: Bag -->
+  <g transform="translate(136, 224)">
+    <!-- Handle -->
+    <path d="M 13 10 Q 13 2 22 2 Q 31 2 31 10" fill="none" stroke="#2ecc71" stroke-width="3" stroke-linecap="round"/>
+    <!-- Body -->
+    <rect x="7" y="10" width="29" height="26" rx="3" fill="#2ecc71"/>
+    <!-- Clasp -->
+    <rect x="17" y="15" width="9" height="6" rx="2" fill="#c9922a"/>
+  </g>
+
+  <!-- TOP SHELF: Heel shoe -->
+  <g transform="translate(200, 222)">
+    <path d="M 5 34 Q 8 18 24 10 Q 36 6 42 13 Q 46 18 39 24 Q 30 17 21 20 Q 13 24 11 34 Z" fill="#c9922a"/>
+    <rect x="4" y="32" width="5" height="13" rx="2" fill="#9a6010"/>
+    <path d="M 4 45 Q 22 47 39 42" fill="none" stroke="#9a6010" stroke-width="1.8"/>
+  </g>
+
+  <!-- BOTTOM SHELF: Shopping bag -->
+  <g transform="translate(134, 288)">
+    <path d="M 14 10 Q 14 3 22 3 Q 30 3 30 10" fill="none" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M 6 10 L 10 46 L 36 46 L 40 10 Z" fill="white" stroke="#ddd" stroke-width="1.2"/>
+  </g>
+
+  <!-- BOTTOM SHELF: Box -->
+  <g transform="translate(200, 292)">
+    <rect x="0" y="10" width="38" height="30" rx="3" fill="#2ecc71"/>
+    <rect x="0" y="10" width="38" height="11" rx="3" fill="#1a9e52"/>
+    <rect x="14" y="10" width="10" height="11" rx="0" fill="#c9922a"/>
+  </g>
+
+  <!-- Store base -->
+  <rect x="106" y="360" width="208" height="9" rx="5" fill="#0d2144" opacity="0.55"/>
+
+  <!-- ======= AWNING ======= -->
+  <!-- White base -->
+  <path d="M 100 225 Q 160 188 210 182 Q 260 188 320 225 L 320 248 Q 210 262 100 248 Z" fill="white"/>
+  <!-- Green stripes clipped -->
+  <g clip-path="url(#awningClip)">
+    <rect x="95"  y="178" width="22" height="85" fill="#2ecc71" transform="skewX(-7)"/>
+    <rect x="133" y="178" width="22" height="85" fill="#2ecc71" transform="skewX(-7)"/>
+    <rect x="171" y="178" width="22" height="85" fill="#2ecc71" transform="skewX(-7)"/>
+    <rect x="209" y="178" width="22" height="85" fill="#2ecc71" transform="skewX(-7)"/>
+    <rect x="247" y="178" width="22" height="85" fill="#2ecc71" transform="skewX(-7)"/>
+    <rect x="285" y="178" width="22" height="85" fill="#2ecc71" transform="skewX(-7)"/>
+  </g>
+  <!-- Scallop fringe -->
+  <path d="M 100 248
+    Q 110 257 120 248
+    Q 130 257 140 248
+    Q 150 257 160 248
+    Q 170 257 180 248
+    Q 190 257 200 248
+    Q 210 257 220 248
+    Q 230 257 240 248
+    Q 250 257 260 248
+    Q 270 257 280 248
+    Q 290 257 300 248
+    Q 310 257 320 248"
+    fill="none" stroke="#1a9e52" stroke-width="2.2"/>
+
+  <!-- ======= SMARTPHONE ======= -->
+  <g filter="url(#shadow)">
+    <!-- Phone body -->
+    <rect x="296" y="242" width="92" height="152" rx="14" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+    <!-- Screen -->
+    <rect x="304" y="258" width="76" height="122" rx="6" fill="#f7f9fc"/>
+    <!-- Notch -->
+    <rect x="326" y="245" width="38" height="7" rx="3.5" fill="#ddd"/>
+
+    <!-- Top bar -->
+    <rect x="304" y="258" width="76" height="22" rx="6" fill="#eef2f7"/>
+    <rect x="304" y="272" width="76" height="8" fill="#eef2f7"/>
+    <!-- Menu lines -->
+    <rect x="310" y="264" width="13" height="2.5" rx="1.2" fill="#1a3a6b"/>
+    <rect x="310" y="269" width="9"  height="2.5" rx="1.2" fill="#1a3a6b"/>
+    <!-- Green indicator dot -->
+    <circle cx="368" cy="266" r="5" fill="#2ecc71"/>
+
+    <!-- Checkmark circle -->
+    <circle cx="342" cy="315" r="22" fill="#2ecc7120"/>
+    <circle cx="342" cy="315" r="17" fill="white" stroke="#2ecc71" stroke-width="3"/>
+    <path d="M 332 315 L 339 323 L 354 308"
+      fill="none" stroke="#2ecc71" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- List rows -->
+    <circle cx="313" cy="348" r="4.5" fill="#2ecc71"/>
+    <rect x="323" y="344" width="47" height="5" rx="2.5" fill="#cdd5e0"/>
+    <rect x="323" y="352" width="34" height="4" rx="2" fill="#e8ecf2"/>
+
+    <circle cx="313" cy="365" r="4.5" fill="#c9922a"/>
+    <rect x="323" y="361" width="42" height="5" rx="2.5" fill="#cdd5e0"/>
+    <rect x="323" y="369" width="28" height="4" rx="2" fill="#e8ecf2"/>
+
+    <circle cx="313" cy="382" r="4.5" fill="#1a3a6b" opacity="0.4"/>
+    <rect x="323" y="378" width="44" height="5" rx="2.5" fill="#cdd5e0"/>
+  </g>
+</svg>

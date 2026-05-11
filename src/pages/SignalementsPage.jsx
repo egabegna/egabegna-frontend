@@ -27,8 +27,21 @@ const TYPE_LABELS = {
   erreur_saisie:        'Erreur saisie',
 }
 
+// ─── Hook responsive ──────────────────────────
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  )
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [breakpoint])
+  return isMobile
+}
+
 // ─── Select custom ────────────────────────────
-function CustomSelect({ value, onChange, options }) {
+function CustomSelect({ value, onChange, options, fullWidth = false }) {
   const [open, setOpen] = useState(false)
   const ref             = useRef(null)
 
@@ -41,11 +54,16 @@ function CustomSelect({ value, onChange, options }) {
   const selected = options.find(o => o.value === value) || options[0]
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', width: fullWidth ? '100%' : undefined }}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        style={{ ...cs.trigger, borderColor: open ? NAVY : BORDER }}
+        style={{
+          ...cs.trigger,
+          borderColor: open ? NAVY : BORDER,
+          minWidth:    fullWidth ? 'unset' : 150,
+          width:       fullWidth ? '100%' : undefined,
+        }}
       >
         <span style={{ flex: 1, textAlign: 'left', color: value ? NAVY : MUTED, fontSize: 12, fontWeight: value ? 600 : 400 }}>
           {selected?.label}
@@ -82,45 +100,20 @@ function CustomSelect({ value, onChange, options }) {
 
 const cs = {
   trigger: {
-    display:      'flex',
-    alignItems:   'center',
-    gap:          8,
-    padding:      '8px 12px',
-    borderRadius: 9,
-    border:       `1.5px solid ${BORDER}`,
-    background:   WHITE,
-    cursor:       'pointer',
-    minWidth:     150,
-    transition:   'border-color 0.15s',
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '8px 12px', borderRadius: 9, border: `1.5px solid ${BORDER}`,
+    background: WHITE, cursor: 'pointer', minWidth: 150, transition: 'border-color 0.15s',
   },
   dropdown: {
-    position:     'absolute',
-    top:          'calc(100% + 4px)',
-    left:         0,
-    minWidth:     '100%',
-    background:   WHITE,
-    border:       `1.5px solid ${BORDER}`,
-    borderRadius: 10,
-    boxShadow:    '0 8px 24px rgba(0,0,0,0.08)',
-    zIndex:       20,
-    overflow:     'hidden',
+    position: 'absolute', top: 'calc(100% + 4px)', left: 0, minWidth: '100%',
+    background: WHITE, border: `1.5px solid ${BORDER}`, borderRadius: 10,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.08)', zIndex: 20, overflow: 'hidden',
   },
   option: {
-    display:    'flex',
-    alignItems: 'center',
-    gap:        8,
-    padding:    '9px 14px',
-    fontSize:   12,
-    cursor:     'pointer',
-    transition: 'background 0.1s',
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '9px 14px', fontSize: 12, cursor: 'pointer', transition: 'background 0.1s',
   },
-  dot: {
-    width:        6,
-    height:       6,
-    borderRadius: '50%',
-    background:   GOLD,
-    flexShrink:   0,
-  },
+  dot: { width: 6, height: 6, borderRadius: '50%', background: GOLD, flexShrink: 0 },
 }
 
 // ─── Badges ───────────────────────────────────
@@ -153,6 +146,8 @@ function NouveauBadge() {
 
 // ─── Page principale ──────────────────────────
 function SignalementsPage({ onCountUpdate }) {
+  const isMobile = useIsMobile()
+
   const [signalements, setSignalements] = useState([])
   const [loading, setLoading]           = useState(true)
   const [filtre, setFiltre]             = useState({ lu: '', niveau: '', type: '' })
@@ -191,41 +186,59 @@ function SignalementsPage({ onCountUpdate }) {
   const avertis   = signalements.filter(s => s.niveau === 'avertissement' && !s.lu).length
 
   return (
-    <div style={s.page}>
+    <div style={{ ...s.page, padding: isMobile ? '16px 12px' : '32px 28px' }}>
 
       {/* ── HEADER ── */}
-      <div style={s.header}>
+      <div style={{
+        ...s.header,
+        flexDirection: isMobile ? 'column' : 'row',
+        gap:           isMobile ? 14 : 0,
+        marginBottom:  isMobile ? 16 : 24,
+      }}>
         <div>
           <p style={s.eyebrow}>Monitoring</p>
-          <h1 style={s.title}>
+          <h1 style={{ ...s.title, fontSize: isMobile ? 22 : 26 }}>
             Signalements
             {nonLus > 0 && <span style={s.countBadge}>{nonLus}</span>}
           </h1>
           <div style={s.titleUnderline} />
         </div>
         {nonLus > 0 && (
-          <button onClick={handleLireTout} style={s.btnLireTout}>
+          <button onClick={handleLireTout} style={{
+            ...s.btnLireTout,
+            width:          isMobile ? '100%' : undefined,
+            justifyContent: isMobile ? 'center' : undefined,
+          }}>
             <CheckCheck size={14} strokeWidth={2.5} />
             <span>Tout marquer comme lu</span>
           </button>
         )}
       </div>
 
-      {/* ── STATS ── */}
-      <div style={s.statsRow}>
+      {/* ── STATS — 2×2 sur mobile ── */}
+      <div style={{
+        ...s.statsRow,
+        flexWrap:     'wrap',
+        gap:          isMobile ? 8 : 12,
+        marginBottom: isMobile ? 16 : 24,
+      }}>
         {[
-          { label: 'Non lus',     val: nonLus,              Icon: Bell,         bg: '#EEF1F8', color: NAVY         },
-          { label: 'Critiques',   val: critiques,           Icon: AlertOctagon, bg: '#FEF1F1', color: RED          },
-          { label: 'Avertissem.', val: avertis,             Icon: AlertTriangle,bg: '#FBF5E9', color: GOLD         },
-          { label: 'Total',       val: signalements.length, Icon: ShieldAlert,  bg: '#EEE9F8', color: '#5b21b6'    },
+          { label: 'Non lus',     val: nonLus,              Icon: Bell,          bg: '#EEF1F8', color: NAVY      },
+          { label: 'Critiques',   val: critiques,           Icon: AlertOctagon,  bg: '#FEF1F1', color: RED       },
+          { label: 'Avertissem.', val: avertis,             Icon: AlertTriangle, bg: '#FBF5E9', color: GOLD      },
+          { label: 'Total',       val: signalements.length, Icon: ShieldAlert,   bg: '#EEE9F8', color: '#5b21b6' },
         ].map(({ label, val, Icon, bg, color }) => (
-          <div key={label} style={s.statCard}>
+          <div key={label} style={{
+            ...s.statCard,
+            flex:    isMobile ? '1 1 calc(50% - 4px)' : 1,
+            padding: isMobile ? '12px 14px' : '14px 18px',
+          }}>
             <div style={{ ...s.statIcon, background: bg }}>
               <Icon size={16} color={color} strokeWidth={1.8} />
             </div>
             <div>
-              <div style={s.statVal}>{val}</div>
-              <div style={s.statLabel}>{label}</div>
+              <div style={{ ...s.statVal, fontSize: isMobile ? 17 : 20 }}>{val}</div>
+              <div style={{ ...s.statLabel, fontSize: isMobile ? 10 : 11 }}>{label}</div>
             </div>
           </div>
         ))}
@@ -234,23 +247,32 @@ function SignalementsPage({ onCountUpdate }) {
       {/* ── MESSAGE ── */}
       {msg && <div style={s.alertSuccess}>{msg}</div>}
 
-      {/* ── FILTRES ── */}
-      <div style={s.filtresCard}>
-        <span style={s.filtreLabel}>Filtrer</span>
+      {/* ── FILTRES — colonne sur mobile ── */}
+      <div style={{
+        ...s.filtresCard,
+        flexDirection: isMobile ? 'column' : 'row',
+        gap:           isMobile ? 8 : 10,
+        padding:       isMobile ? '12px 12px' : '12px 18px',
+        marginBottom:  isMobile ? 16 : 20,
+        alignItems:    isMobile ? 'stretch' : 'center',
+      }}>
+        {/* Label "Filtrer" masqué sur mobile pour gagner de la place */}
+        {!isMobile && <span style={s.filtreLabel}>Filtrer</span>}
 
         <CustomSelect
           value={filtre.lu}
           onChange={val => setFiltre(p => ({ ...p, lu: val }))}
+          fullWidth={isMobile}
           options={[
             { value: '',      label: 'Tous statuts' },
             { value: 'false', label: 'Non lus'      },
             { value: 'true',  label: 'Lus'          },
           ]}
         />
-
         <CustomSelect
           value={filtre.niveau}
           onChange={val => setFiltre(p => ({ ...p, niveau: val }))}
+          fullWidth={isMobile}
           options={[
             { value: '',              label: 'Tous niveaux'  },
             { value: 'info',          label: 'Info'          },
@@ -258,20 +280,24 @@ function SignalementsPage({ onCountUpdate }) {
             { value: 'critique',      label: 'Critique'      },
           ]}
         />
-
         <CustomSelect
           value={filtre.type}
           onChange={val => setFiltre(p => ({ ...p, type: val }))}
+          fullWidth={isMobile}
           options={[
-            { value: '',                       label: 'Tous types'           },
-            { value: 'stock_anormal',          label: 'Stock anormal'        },
-            { value: 'difference_caisse',      label: 'Différence caisse'    },
-            { value: 'comportement_suspect',   label: 'Comportement suspect' },
-            { value: 'erreur_saisie',          label: 'Erreur saisie'        },
+            { value: '',                     label: 'Tous types'           },
+            { value: 'stock_anormal',        label: 'Stock anormal'        },
+            { value: 'difference_caisse',    label: 'Différence caisse'    },
+            { value: 'comportement_suspect', label: 'Comportement suspect' },
+            { value: 'erreur_saisie',        label: 'Erreur saisie'        },
           ]}
         />
 
-        <span style={s.resultCount}>
+        <span style={{
+          ...s.resultCount,
+          marginLeft: isMobile ? 0 : 'auto',
+          textAlign:  isMobile ? 'right' : 'left',
+        }}>
           {signalements.length} signalement{signalements.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -289,7 +315,7 @@ function SignalementsPage({ onCountUpdate }) {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 8 : 10 }}>
           {signalements.map(sig => {
             const nc = NIVEAU_CONFIG[sig.niveau] || NIVEAU_CONFIG.info
             const { Icon } = nc
@@ -298,37 +324,82 @@ function SignalementsPage({ onCountUpdate }) {
                 key={sig.id}
                 style={{
                   ...s.card,
+                  padding:    isMobile ? '12px 12px' : '14px 18px',
+                  gap:        isMobile ? 0 : 14,
+                  flexDirection: isMobile ? 'column' : 'row',
                   borderLeft: `3px solid ${sig.lu ? BORDER : nc.border}`,
-                  opacity: sig.lu ? 0.65 : 1,
+                  opacity:    sig.lu ? 0.65 : 1,
                 }}
               >
-                <div style={{ ...s.niveauIcon, background: nc.bg }}>
-                  <Icon size={16} color={nc.color} strokeWidth={2} />
-                </div>
+                {isMobile ? (
+                  /* ── Layout mobile : 3 lignes ── */
+                  <>
+                    {/* Ligne 1 : icône + badges + bouton marquer lu */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <div style={{ ...s.niveauIcon, background: nc.bg, width: 30, height: 30, borderRadius: 8, marginTop: 0, flexShrink: 0 }}>
+                        <Icon size={13} color={nc.color} strokeWidth={2} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', flex: 1 }}>
+                        <NiveauBadge niveau={sig.niveau} />
+                        <TypeBadge   type={sig.type}    />
+                        {!sig.lu && <NouveauBadge />}
+                      </div>
+                      {/* Bouton icône seul sur mobile */}
+                      {!sig.lu && (
+                        <button
+                          onClick={() => handleLire(sig.id)}
+                          style={{ ...s.btnLire, padding: '6px 8px', gap: 0 }}
+                          title="Marquer comme lu"
+                        >
+                          <CheckCheck size={13} strokeWidth={2.5} />
+                        </button>
+                      )}
+                    </div>
 
-                <div style={{ flex: 1 }}>
-                  <div style={s.cardHeader}>
-                    <NiveauBadge niveau={sig.niveau} />
-                    <TypeBadge   type={sig.type}    />
-                    {!sig.lu && <NouveauBadge />}
-                  </div>
-                  <p style={s.message}>{sig.message}</p>
-                  <div style={s.meta}>
-                    <span>{new Date(sig.date).toLocaleString('fr-FR')}</span>
-                    {sig.employe_nom && (
-                      <>
-                        <span style={s.metaDot}>·</span>
-                        <span>{sig.employe_nom}</span>
-                      </>
+                    {/* Ligne 2 : message */}
+                    <p style={{ ...s.message, margin: '0 0 8px' }}>{sig.message}</p>
+
+                    {/* Ligne 3 : méta */}
+                    <div style={s.meta}>
+                      <span>{new Date(sig.date).toLocaleString('fr-FR')}</span>
+                      {sig.employe_nom && (
+                        <>
+                          <span style={s.metaDot}>·</span>
+                          <span>{sig.employe_nom}</span>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* ── Layout desktop ── */
+                  <>
+                    <div style={{ ...s.niveauIcon, background: nc.bg }}>
+                      <Icon size={16} color={nc.color} strokeWidth={2} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={s.cardHeader}>
+                        <NiveauBadge niveau={sig.niveau} />
+                        <TypeBadge   type={sig.type}    />
+                        {!sig.lu && <NouveauBadge />}
+                      </div>
+                      <p style={s.message}>{sig.message}</p>
+                      <div style={s.meta}>
+                        <span>{new Date(sig.date).toLocaleString('fr-FR')}</span>
+                        {sig.employe_nom && (
+                          <>
+                            <span style={s.metaDot}>·</span>
+                            <span>{sig.employe_nom}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {!sig.lu && (
+                      <button onClick={() => handleLire(sig.id)} style={s.btnLire}>
+                        <CheckCheck size={12} strokeWidth={2.5} />
+                        <span>Marquer lu</span>
+                      </button>
                     )}
-                  </div>
-                </div>
-
-                {!sig.lu && (
-                  <button onClick={() => handleLire(sig.id)} style={s.btnLire}>
-                    <CheckCheck size={12} strokeWidth={2.5} />
-                    <span>Marquer lu</span>
-                  </button>
+                  </>
                 )}
               </div>
             )
@@ -348,13 +419,13 @@ const s = {
   titleUnderline:{ width: 32, height: 3, background: GOLD, borderRadius: 2, marginTop: 10 },
   countBadge:    { background: RED, color: WHITE, fontSize: 12, fontWeight: 800, padding: '2px 9px', borderRadius: 20 },
 
-  btnLireTout: { display: 'flex', alignItems: 'center', gap: 8, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5`, padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 },
+  btnLireTout:  { display: 'flex', alignItems: 'center', gap: 8, background: '#EBF5EF', color: GREEN, border: `1px solid #A8D5B5`, padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 },
 
-  statsRow: { display: 'flex', gap: 12, marginBottom: 24 },
-  statCard: { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1 },
-  statIcon: { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  statVal:  { fontSize: 20, fontWeight: 800, color: NAVY, lineHeight: 1 },
-  statLabel:{ fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 2 },
+  statsRow:  { display: 'flex', gap: 12, marginBottom: 24 },
+  statCard:  { display: 'flex', alignItems: 'center', gap: 12, background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', flex: 1 },
+  statIcon:  { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statVal:   { fontSize: 20, fontWeight: 800, color: NAVY, lineHeight: 1 },
+  statLabel: { fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.5px', marginTop: 2 },
 
   alertSuccess: { background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 10, padding: '10px 16px', marginBottom: 18, fontSize: 13, fontWeight: 500 },
 
@@ -362,9 +433,9 @@ const s = {
   filtreLabel: { fontSize: 11, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1.5px', marginRight: 4 },
   resultCount: { marginLeft: 'auto', fontSize: 12, color: MUTED, fontWeight: 500 },
 
-  tableCard: { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' },
-  card:      { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'opacity 0.2s' },
-  niveauIcon:{ width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 },
+  tableCard:  { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' },
+  card:       { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'opacity 0.2s' },
+  niveauIcon: { width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 },
 
   cardHeader: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
   badge:      { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 },

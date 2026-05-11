@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuthContext } from '../../store/AuthContext'
 import { useAuth } from '../../hooks/useAuth'
@@ -83,6 +83,70 @@ const GROUPES_VENDEUR = [
   },
 ]
 
+// Inject responsive CSS once
+const SIDEBAR_CSS = `
+  .sb-sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: 220px;
+    background: #fff;
+    border-right: 1px solid ${BORDER};
+    display: flex;
+    flex-direction: column;
+    z-index: 30;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* On desktop: always visible */
+  @media (min-width: 641px) {
+    .sb-sidebar {
+      transform: translateX(0) !important;
+    }
+    .sb-overlay {
+      display: none !important;
+    }
+  }
+
+  /* On mobile: slide in/out */
+  @media (max-width: 640px) {
+    .sb-sidebar {
+      width: 260px;
+      transform: translateX(-100%);
+      box-shadow: none;
+    }
+    .sb-sidebar.sb-open {
+      transform: translateX(0);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.13);
+    }
+    .sb-overlay {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 29;
+      animation: sb-fade-in 0.2s ease;
+    }
+    @keyframes sb-fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+  }
+`
+
+function InjectStyles() {
+  useEffect(() => {
+    const id = 'sb-responsive-styles'
+    if (!document.getElementById(id)) {
+      const el = document.createElement('style')
+      el.id = id
+      el.textContent = SIDEBAR_CSS
+      document.head.appendChild(el)
+    }
+  }, [])
+  return null
+}
+
 function Sidebar({ mobileOpen, onClose }) {
   const { role, nom_boutique } = useAuthContext()
   const { logout }             = useAuth()
@@ -96,6 +160,16 @@ function Sidebar({ mobileOpen, onClose }) {
     'Système': true,
   })
 
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
+
   const groupes = ['proprietaire', 'manager'].includes(role)
     ? GROUPES_PROPRIETAIRE
     : GROUPES_VENDEUR
@@ -106,22 +180,29 @@ function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      {mobileOpen && <div style={s.overlay} onClick={onClose} />}
+      <InjectStyles />
 
-      <aside style={s.sidebar}>
+      {/* Overlay — mobile only, via CSS */}
+      {mobileOpen && (
+        <div className="sb-overlay" onClick={onClose} />
+      )}
 
-        {/* ── HEADER LOGO ── */}
-        <div style={s.header}>
-          <div style={s.logoMark}>
-            <svg width="14" height="12" viewBox="0 0 14 12" fill="none">
-              <polygon points="7,0 14,12 0,12" fill={GOLD} />
-            </svg>
-          </div>
-          <div>
-            <div style={s.appName}>EGABEGNA</div>
-            <div style={s.boutiqueName}>{nom_boutique || '—'}</div>
-          </div>
+      <aside className={`sb-sidebar${mobileOpen ? ' sb-open' : ''}`}>
+
+      {/* ── HEADER LOGO ── */}
+      <div style={s.header}>
+        <div style={s.logoMark}>
+          <img
+            src="/icons/egabegna-icon.svg"
+            alt="Egabégna"
+            style={{ width: 20, height: 20 }}
+          />
         </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={s.appName}>EGABEGNA</div>
+          <div style={s.boutiqueName}>{nom_boutique || '—'}</div>
+        </div>
+      </div>
 
         <div style={s.divider} />
 
@@ -133,7 +214,8 @@ function Sidebar({ mobileOpen, onClose }) {
               <div key={groupe.label} style={s.groupe}>
                 <button
                   onClick={() => toggle(groupe.label)}
-                  style={s.groupeHeader}>
+                  style={s.groupeHeader}
+                >
                   <span style={s.groupeLabel}>{groupe.label}</span>
                   <ChevronDown
                     size={12}
@@ -195,7 +277,7 @@ function Sidebar({ mobileOpen, onClose }) {
             <div style={s.roleAvatar}>
               {role ? role.charAt(0).toUpperCase() + role.slice(1, 3) : '—'}
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={s.roleName}>{nom_boutique || '—'}</div>
               <div style={s.roleTag}>{role}</div>
             </div>
@@ -211,27 +293,16 @@ function Sidebar({ mobileOpen, onClose }) {
   )
 }
 
-const SIDEBAR_W = 220
-
 const s = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)', zIndex: 29,
-  },
-  sidebar: {
-    position: 'fixed', top: 0, left: 0,
-    height: '100vh', width: SIDEBAR_W,
-    backgroundColor: '#fff', borderRight: `1px solid ${BORDER}`,
-    display: 'flex', flexDirection: 'column', zIndex: 30,
-  },
   header: {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '20px 16px 18px',
   },
   logoMark: {
     width: 34, height: 34, borderRadius: 9,
-    background: NAVY, display: 'flex',
+    background: 'transport', display: 'flex',
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    border: `1px solid ${NAVY}`,
   },
   appName: {
     fontSize: 13, fontWeight: 800, color: NAVY,
@@ -240,7 +311,7 @@ const s = {
   boutiqueName: {
     fontSize: 10, color: MUTED, marginTop: 2,
     whiteSpace: 'nowrap', overflow: 'hidden',
-    textOverflow: 'ellipsis', maxWidth: 130, letterSpacing: '0.3px',
+    textOverflow: 'ellipsis', maxWidth: 150, letterSpacing: '0.3px',
   },
   divider: { height: 1, background: BORDER, margin: '0 16px' },
   nav: { flex: 1, overflowY: 'auto', padding: '8px 10px' },
@@ -257,7 +328,7 @@ const s = {
   groupeLiens: { paddingLeft: 0 },
   lien: {
     display: 'flex', alignItems: 'center', gap: 10,
-    padding: '9px 12px', borderRadius: 9,
+    padding: '10px 12px', borderRadius: 9,
     fontSize: 13, textDecoration: 'none',
     marginBottom: 2, position: 'relative',
     transition: 'background 0.15s',
@@ -288,7 +359,7 @@ const s = {
   roleName: {
     fontSize: 12, fontWeight: 600, color: NAVY,
     whiteSpace: 'nowrap', overflow: 'hidden',
-    textOverflow: 'ellipsis', maxWidth: 120,
+    textOverflow: 'ellipsis', maxWidth: 140,
   },
   roleTag: {
     fontSize: 10, color: MUTED, textTransform: 'capitalize',
@@ -298,7 +369,7 @@ const s = {
     display: 'flex', alignItems: 'center', gap: 8,
     width: '100%', backgroundColor: '#fef1f1',
     color: '#c0392b', border: '1px solid #fdd',
-    padding: '8px 12px', borderRadius: 8,
+    padding: '10px 12px', borderRadius: 8,
     cursor: 'pointer', fontSize: 12, fontWeight: 600,
   },
 }

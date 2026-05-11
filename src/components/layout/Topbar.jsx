@@ -3,6 +3,7 @@ import { useAuthContext } from '../../store/AuthContext'
 import { useAuth } from '../../hooks/useAuth'
 import { useSignalementsCount } from '../../hooks/useSignalements'
 import { AlertTriangle, LogOut, Store } from 'lucide-react'
+import { useEffect } from 'react'
 
 const NAVY  = '#1B2D5B'
 const GOLD  = '#C89A3C'
@@ -24,6 +25,99 @@ const TITRES = {
   '/parametres':   'Paramètres',
 }
 
+const TOPBAR_CSS = `
+  .tb-wrap {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+    gap: 24px;
+  }
+  .tb-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .tb-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .tb-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .tb-userinfo {
+    display: block;
+  }
+  .tb-date {
+    display: block;
+  }
+  .tb-sep {
+    width: 1px;
+    height: 22px;
+    background: ${BORDER};
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    .tb-wrap {
+      gap: 8px;
+    }
+    /* Hide date and user info text on mobile */
+    .tb-date {
+      display: none;
+    }
+    .tb-userinfo {
+      display: none;
+    }
+    /* Hide center section — page title is shown in sidebar/elsewhere */
+    .tb-center {
+      display: none;
+    }
+    /* Left: just logo + boutique name, compact */
+    .tb-boutique-name {
+      font-size: 13px !important;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* Right: tighter gap */
+    .tb-right {
+      gap: 4px;
+    }
+    /* Hide first separator on mobile */
+    .tb-sep-first {
+      display: none;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .tb-boutique-name {
+      max-width: 80px;
+    }
+  }
+`
+
+function InjectStyles() {
+  useEffect(() => {
+    const id = 'tb-responsive-styles'
+    if (!document.getElementById(id)) {
+      const style = document.createElement('style')
+      style.id = id
+      style.textContent = TOPBAR_CSS
+      document.head.appendChild(style)
+    }
+  }, [])
+  return null
+}
+
 function Topbar() {
   const { role, nom_boutique, logo } = useAuthContext()
   const { nonLus }             = useSignalementsCount()
@@ -40,31 +134,32 @@ function Topbar() {
   })
 
   return (
-    <div style={ds.wrap}>
-            {/* ── GAUCHE : Boutique + Date ── */}
-      <div style={ds.left}>
+    <div className="tb-wrap">
+      <InjectStyles />
+
+      {/* ── GAUCHE : Boutique + Date ── */}
+      <div className="tb-left">
         <div style={ds.boutiqueRow}>
           {logo ? (
-            <img src={logo} alt="Logo" style={{
-              width: 32, height: 32, borderRadius: 8, objectFit: 'contain'
-            }} />
+            <img src={logo} alt="Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'contain' }} />
           ) : (
             <Store size={15} color={GOLD} strokeWidth={1.8} />
           )}
-          <span style={ds.boutiqueName}>{nom_boutique || '—'}</span>
+          <span className="tb-boutique-name" style={ds.boutiqueName}>
+            {nom_boutique || '—'}
+          </span>
         </div>
-        <div style={ds.date}>{dateStr}</div>
+        <div className="tb-date" style={ds.date}>{dateStr}</div>
       </div>
 
       {/* ── CENTRE : Titre page ── */}
-      <div style={ds.center}>
+      <div className="tb-center">
         <span style={ds.pageEyebrow}>Navigation</span>
         <span style={ds.pageTitle}>{pageTitle}</span>
       </div>
-      
 
       {/* ── DROITE : Actions ── */}
-      <div style={ds.right}>
+      <div className="tb-right">
 
         {/* Signalements */}
         <button
@@ -78,16 +173,16 @@ function Topbar() {
           )}
         </button>
 
-        <div style={ds.sep} />
+        <div className="tb-sep tb-sep-first" />
 
         {/* Avatar + rôle */}
-        <div style={ds.userInfo}>
+        <div className="tb-userinfo" style={ds.userInfo}>
           <div style={ds.userName}>{nom_boutique}</div>
           <div style={ds.userRole}>{role}</div>
         </div>
         <div style={ds.avatar}>{initiales}</div>
 
-        <div style={ds.sep} />
+        <div className="tb-sep" />
 
         {/* Déconnexion */}
         <button onClick={logout} style={ds.logoutBtn} title="Déconnexion">
@@ -100,21 +195,6 @@ function Topbar() {
 }
 
 const ds = {
-  wrap: {
-    display:        'flex',
-    alignItems:     'center',
-    flex:           1,
-    height:         '100%',
-    gap:            24,
-  },
-
-  /* Gauche */
-  left: {
-    display:       'flex',
-    flexDirection: 'column',
-    gap:           2,
-    flexShrink:    0,
-  },
   boutiqueRow: {
     display:    'flex',
     alignItems: 'center',
@@ -133,15 +213,6 @@ const ds = {
     letterSpacing: '0.3px',
     textTransform: 'capitalize',
   },
-
-  /* Centre */
-  center: {
-    flex:           1,
-    display:        'flex',
-    flexDirection:  'column',
-    alignItems:     'center',
-    gap:            2,
-  },
   pageEyebrow: {
     fontSize:      9,
     fontWeight:    600,
@@ -155,15 +226,6 @@ const ds = {
     color:         NAVY,
     letterSpacing: '0.3px',
   },
-
-  /* Droite */
-  right: {
-    display:    'flex',
-    alignItems: 'center',
-    gap:        10,
-    flexShrink: 0,
-  },
-
   iconBtn: {
     position:       'relative',
     background:     'none',
@@ -176,28 +238,21 @@ const ds = {
     justifyContent: 'center',
   },
   badge: {
-    position:   'absolute',
-    top:        0,
-    right:      0,
-    background: '#c0392b',
-    color:      '#fff',
-    fontSize:   9,
-    fontWeight: 700,
-    padding:    '1px 4px',
+    position:     'absolute',
+    top:          0,
+    right:        0,
+    background:   '#c0392b',
+    color:        '#fff',
+    fontSize:     9,
+    fontWeight:   700,
+    padding:      '1px 4px',
     borderRadius: 6,
-    minWidth:   14,
-    textAlign:  'center',
-    lineHeight: '14px',
+    minWidth:     14,
+    textAlign:    'center',
+    lineHeight:   '14px',
   },
-
-  sep: {
-    width:      1,
-    height:     22,
-    background: BORDER,
-  },
-
   userInfo: {
-    textAlign: 'right',
+    textAlign:  'right',
     lineHeight: 1.2,
   },
   userName: {
@@ -211,7 +266,6 @@ const ds = {
     textTransform: 'capitalize',
     marginTop:     1,
   },
-
   avatar: {
     width:          32,
     height:         32,
@@ -227,7 +281,6 @@ const ds = {
     letterSpacing:  '0.5px',
     flexShrink:     0,
   },
-
   logoutBtn: {
     background:     'none',
     border:         'none',
