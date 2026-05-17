@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthContext } from '../store/AuthContext'
+import { useSearchParams, useNavigate } from 'react-router-dom' 
 import { useDebounce } from '../hooks/useDebounce'
 import produitService from '../services/produitService'
 import {
   Search, Plus, Pencil, X, TrendingUp, TrendingDown,
-  SlidersHorizontal, ArrowUpDown, ChevronDown,
+  SlidersHorizontal, ArrowUpDown, ChevronDown,ArrowLeft
 } from 'lucide-react'
 
 const NAVY   = '#1B2D5B'
@@ -257,6 +258,7 @@ const ms = {
 
 // ── Drawer historique mouvements ──────────────
 function HistoriqueDrawer({ produit, onClose, role }) {
+  const [searchParams]              = useSearchParams()
   const [mouvements, setMouvements] = useState([])
   const [loading, setLoading]       = useState(true)
   const [showAjust, setShowAjust]   = useState(false)
@@ -491,11 +493,14 @@ function ProduitsPage() {
   const [loading, setLoading]             = useState(true)
   const [search, setSearch]               = useState('')
   const [filtreStock, setFiltreStock]     = useState(false)
-  const [filtreCat, setFiltreCat]         = useState('')
   const [showModal, setShowModal]         = useState(false)
   const [editProduit, setEditProduit]     = useState(null)
   const [drawerProduit, setDrawerProduit] = useState(null)
-
+  const navigate                          = useNavigate()
+  const [searchParams] = useSearchParams()
+  const categorieId    = searchParams.get('categorie')
+  const categorieNom   = searchParams.get('categorie_nom')
+  const [filtreCat, setFiltreCat]         = useState(categorieId || '')
   const debouncedSearch = useDebounce(search, 300)
 
   const charger = useCallback(async () => {
@@ -524,6 +529,18 @@ function ProduitsPage() {
   return (
     <div className="pp-page">
       <InjectStyles />
+
+      {/* Breadcrumb catégorie */}
+      {categorieNom && (
+        <div style={br.wrap}>
+          <button onClick={() => navigate('/categories')} style={br.btnRetour}>
+            <ArrowLeft size={13} strokeWidth={2} />
+            Catégories
+          </button>
+          <span style={br.sep}>›</span>
+          <span style={br.current}>{categorieNom}</span>
+        </div>
+      )}
 
       {/* HEADER */}
       <div className="pp-header">
@@ -680,6 +697,17 @@ const ps = {
   btnEdit:       { display: 'flex', alignItems: 'center', gap: 5, background: BG, color: NAVY, border: 'none', padding: '6px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 600 },
   loading:       { color: MUTED, textAlign: 'center', padding: 48, fontSize: 13 },
   empty:         { textAlign: 'center', color: MUTED, padding: 60, background: BG, borderRadius: 14, fontSize: 13 },
+}
+
+const br = {
+  wrap:      { display: 'flex', alignItems: 'center', gap: 8,
+               marginBottom: 16, flexWrap: 'wrap' },
+  btnRetour: { display: 'flex', alignItems: 'center', gap: 5,
+               background: 'none', border: 'none', cursor: 'pointer',
+               color: '#6b7280', fontSize: 13, padding: '4px 8px',
+               borderRadius: 6 },
+  sep:       { color: '#9ca3af', fontSize: 14 },
+  current:   { fontSize: 13, fontWeight: 600, color: '#1B2D5B' },
 }
 
 export default ProduitsPage

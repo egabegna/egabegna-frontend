@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import produitService from '../services/produitService'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Tag, Search } from 'lucide-react'
 
 const NAVY   = '#1B2D5B'
@@ -26,7 +27,7 @@ function useIsMobile(breakpoint = 640) {
 
 function CategoriesPage() {
   const isMobile = useIsMobile()
-
+  const navigate = useNavigate()
   const [categories, setCategories] = useState([])
   const [loading, setLoading]       = useState(true)
   const [showForm, setShowForm]     = useState(false)
@@ -252,21 +253,22 @@ function CategoriesPage() {
               {search ? 'Aucun résultat pour cette recherche.' : 'Aucune catégorie créée.'}
             </p>
           </div>
-        ) : isMobile ? (
+
+          ) : isMobile ? (
           /* ── Cartes mobiles ── */
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {filtered.map((cat, i) => {
               const hasProducts = cat.nb_produits > 0
               return (
-                <div
-                  key={cat.id}
+                <div key={cat.id}
                   style={{
                     padding: '14px 14px',
                     background: i % 2 === 0 ? WHITE : '#FAFBFC',
                     borderBottom: i < filtered.length - 1 ? `1px solid ${BORDER}` : 'none',
+                    cursor: 'pointer',
                   }}
+                  onClick={() => navigate(`/produits?categorie=${cat.id}&categorie_nom=${encodeURIComponent(cat.nom)}`)}
                 >
-                  {/* Ligne 1 : icône + nom + badge */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                     <div style={s.catIconWrap}>
                       <Tag size={14} color={GOLD} strokeWidth={1.8} />
@@ -282,30 +284,23 @@ function CategoriesPage() {
                       {hasProducts ? 'Active' : 'Vide'}
                     </span>
                   </div>
-
-                  {/* Ligne 2 : nb produits + actions */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 12, color: hasProducts ? NAVY : MUTED, fontWeight: hasProducts ? 600 : 400 }}>
                       {cat.nb_produits} produit{cat.nb_produits !== 1 ? 's' : ''}
                     </span>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => ouvrirForm(cat)}
-                        style={{ ...s.btnAction, background: '#EEF1F8', color: NAVY, border: `1px solid ${BORDER}` }}
-                      >
+                      <button onClick={() => ouvrirForm(cat)}
+                        style={{ ...s.btnAction, background: '#EEF1F8', color: NAVY, border: `1px solid ${BORDER}` }}>
                         <Pencil size={12} strokeWidth={2} />
                         <span>Modifier</span>
                       </button>
-                      <button
-                        onClick={() => handleDelete(cat)}
+                      <button onClick={() => handleDelete(cat)}
                         disabled={hasProducts || deletingId === cat.id}
                         style={{
-                          ...s.btnAction,
-                          background: '#FEF1F1', color: RED, border: '1px solid #FBBCBC',
+                          ...s.btnAction, background: '#FEF1F1', color: RED, border: '1px solid #FBBCBC',
                           opacity: hasProducts ? 0.35 : 1,
-                          cursor:  hasProducts ? 'not-allowed' : 'pointer',
-                        }}
-                      >
+                          cursor: hasProducts ? 'not-allowed' : 'pointer',
+                        }}>
                         <Trash2 size={12} strokeWidth={2} />
                         <span>{deletingId === cat.id ? '...' : 'Suppr.'}</span>
                       </button>
@@ -330,12 +325,13 @@ function CategoriesPage() {
               {filtered.map((cat, i) => {
                 const hasProducts = cat.nb_produits > 0
                 return (
-                  <tr
-                    key={cat.id}
-                    style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC' }}
-                    onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
-                    onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
-                  >
+                    <tr
+                      key={cat.id}
+                      style={{ ...s.tr, background: i % 2 === 0 ? WHITE : '#FAFBFC', cursor: 'pointer' }}
+                      onClick={() => navigate(`/produits?categorie=${cat.id}&categorie_nom=${encodeURIComponent(cat.nom)}`)}
+                      onMouseEnter={ev => ev.currentTarget.style.backgroundColor = '#EEF1F8'}
+                      onMouseLeave={ev => ev.currentTarget.style.backgroundColor = i % 2 === 0 ? WHITE : '#FAFBFC'}
+                    >
                     <td style={s.td}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={s.catIconWrap}>
