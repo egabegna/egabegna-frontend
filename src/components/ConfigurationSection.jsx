@@ -184,13 +184,23 @@ function ConfigurationSection() {
               <span>Programme fidélité</span>
             </div>
             <NumField
-              label="Seuil de fidélité"
-              name="seuil_fidelite"
-              value={config.seuil_fidelite}
-              onChange={handleChange}
-              min={0}
-              suffix="achats"
-              hint="Nombre d'achats minimum pour qu'un client soit considéré fidèle."
+            label="Seuil de fidélité — Achats"
+            name="seuil_fidelite_achats"
+            value={config.seuil_fidelite_achats}
+            onChange={handleChange}
+            min={0}
+            suffix="achats"
+            hint="Nombre d'achats minimum."
+            />
+
+            <NumField
+            label="Seuil de fidélité — Période"
+            name="seuil_fidelite_jours"
+            value={config.seuil_fidelite_jours}
+            onChange={handleChange}
+            min={0}
+            suffix="jours"
+            hint="Sur combien de jours les achats doivent être effectués."
             />
           </div>
 

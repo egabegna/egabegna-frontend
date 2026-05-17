@@ -8,6 +8,7 @@ import {
   Store, Phone, MapPin, Coins, FlaskConical,
   Settings, Percent, ShoppingBag, GitBranch,
 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 
 const NAVY   = '#1B2D5B'
 const GOLD   = '#C89A3C'
@@ -397,7 +398,9 @@ function OngletConfiguration() {
 
       <ConfigurationSection />
       {/* <NotificationsPush /> */}
-      <DeuxFacteursSection />
+      <div id="section-2fa">
+        <DeuxFacteursSection />
+      </div>
 
     </>
   )
@@ -406,7 +409,8 @@ function OngletConfiguration() {
 // ─── Page principale ──────────────────────────
 function ParametresPage() {
   const { setAuth } = useAuthContext()
-  const [onglet, setOnglet] = useState('infos')
+  const [searchParams] = useSearchParams()
+  const [onglet, setOnglet] = useState(searchParams.get('tab') || 'infos')
 
   const ONGLETS = [
     { key: 'infos',  label: 'Infos boutique',       Icon: Store    },

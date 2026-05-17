@@ -190,7 +190,7 @@ function ProfilPage() {
             {profil?.deux_fa_actif ? 'Activée' : 'Non configurée'}
         </span>
         </div>
-        <Link to="/parametres?tab=config" style={{
+        <Link to="/parametres?tab=config#section-2fa" style={{
         fontSize: 13, color: NAVY, fontWeight: 600, textDecoration: 'none'
         }}>
         Gérer →
