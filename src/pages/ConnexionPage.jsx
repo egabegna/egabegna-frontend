@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import axios from 'axios'
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react'
 import AuthBackground from '../components/shared/AuthBackground'
 
@@ -11,10 +11,11 @@ const BORDER = '#EAECEF'
 const WHITE  = '#FFFFFF'
 const RED    = '#c0392b'
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 const INITIAL_FORM   = { email: '', mot_de_passe: '' }
 const INITIAL_ERRORS = { email: '', mot_de_passe: '', global: '' }
 
-// ─── Hook responsive ──────────────────────────
 function useIsMobile(breakpoint = 480) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
@@ -28,7 +29,6 @@ function useIsMobile(breakpoint = 480) {
 }
 
 function ConnexionPage() {
-  const { login }             = useAuth()
   const isMobile              = useIsMobile()
   const [form, setForm]       = useState(INITIAL_FORM)
   const [errors, setErrors]   = useState(INITIAL_ERRORS)
@@ -48,24 +48,40 @@ function ConnexionPage() {
     setLoading(true)
     setErrors(INITIAL_ERRORS)
     try {
-      await login({ email: form.email.trim(), mot_de_passe: form.mot_de_passe })
+      const response = await axios.post(`${API_BASE}/api/auth/login/`, {
+        email: form.email.trim(),
+        mot_de_passe: form.mot_de_passe,
+      })
+      const data = response.data
+
+      if (data.multi_boutique) {
+        localStorage.setItem('mb_email', form.email.trim())
+        localStorage.setItem('mb_boutiques', JSON.stringify(data.boutiques))
+        window.location.href = '/choisir-boutique'
+        return
+      }
+
+      localStorage.setItem('access_token', data.access)
+      localStorage.setItem('refresh_token', data.refresh)
+      localStorage.setItem('role', data.role)
+      localStorage.setItem('nom_boutique', data.nom_boutique)
+      window.location.href = '/dashboard'
     } catch (err) {
-      const data = err.response?.data
-      setErrors(prev => ({ ...prev, global: data?.detail || data?.non_field_errors?.[0] || 'Email ou mot de passe incorrect.' }))
-    } finally { setLoading(false) }
+      const detail = err.response?.data?.detail
+      setErrors(prev => ({ ...prev, global: detail || 'Email ou mot de passe incorrect.' }))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <AuthBackground>
       <div style={{
         ...s.card,
-        // Sur mobile : bords arrondis réduits, padding réduit, pas de marge latérale
         borderRadius:  isMobile ? 14 : 18,
         padding:       isMobile ? '28px 20px' : '40px 36px',
-        // Pleine largeur avec petites marges latérales sur très petits écrans
         width:         isMobile ? 'calc(100% - 32px)' : '100%',
         maxWidth:      420,
-        // Ombre allégée sur mobile
         boxShadow:     isMobile
           ? '0 8px 32px rgba(0,0,0,0.18)'
           : '0 20px 60px rgba(0,0,0,0.28)',
@@ -103,7 +119,6 @@ function ConnexionPage() {
               <div style={s.inputIcon}><Mail size={13} color={MUTED} strokeWidth={1.8} /></div>
               <input name="email" type="email" value={form.email} onChange={handleChange}
                 placeholder="votre@email.com" autoComplete="email"
-                // font-size ≥ 16px sur mobile pour éviter le zoom auto iOS
                 style={{ ...s.input, paddingLeft: 36, fontSize: isMobile ? 16 : 13 }} />
             </div>
           </div>
@@ -138,6 +153,13 @@ function ConnexionPage() {
               ? 'Connexion...'
               : <><LogIn size={15} strokeWidth={2.5} /><span>Se connecter</span></>}
           </button>
+
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <Link to="/mot-de-passe-oublie"
+              style={{ fontSize: 13, color: MUTED, textDecoration: 'none' }}>
+              Mot de passe oublié ?
+            </Link>
+          </div>
         </form>
 
         <p style={{ ...s.foot, marginTop: isMobile ? 18 : 22, fontSize: isMobile ? 12 : 13 }}>

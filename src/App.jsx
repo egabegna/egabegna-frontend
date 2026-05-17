@@ -1,19 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect }    from 'react'
+import { useEffect } from 'react'
 import { AuthProvider, useAuthContext } from './store/AuthContext'
-import { SuperadminProvider }           from './store/SuperadminContext'
-import { setupInterceptors }            from './services/interceptors'
-import { useAuth }                      from './hooks/useAuth'
-import { usePushNotifications }         from './hooks/usePushNotifications'
-import AppLayout                        from './components/layout/AppLayout'
-import { ProtectedRoute, PublicRoute }  from './components/layout/ProtectedRoute'
-import SuperadminRoute                  from './components/layout/SuperadminRoute'
-
+import { SuperadminProvider } from './store/SuperadminContext'
+import { setupInterceptors } from './services/interceptors'
+import { usePushNotifications } from './hooks/usePushNotifications'
+import AppLayout from './components/layout/AppLayout'
+import { ProtectedRoute, PublicRoute } from './components/layout/ProtectedRoute'
+import SuperadminRoute from './components/layout/SuperadminRoute'
 
 // Pages auth
 import ConnexionPage    from './pages/ConnexionPage'
 import InscriptionPage  from './pages/InscriptionPage'
 import InvitationPage   from './pages/InvitationPage'
+import DeuxFacteursLoginPage from './pages/DeuxFacteursLoginPage'
+import MotDePasseOubliePage from './pages/MotDePasseOubliePage'
+import ResetPasswordPage    from './pages/ResetPasswordPage'
 
 // Pages app
 import DashboardPage    from './pages/DashboardPage'
@@ -29,22 +30,19 @@ import ChoisirBoutiquePage from './pages/ChoisirBoutiquePage'
 import RapportsPage     from './pages/RapportsPage'
 import SignalementsPage from './pages/SignalementsPage'
 import ParametresPage   from './pages/ParametresPage'
+import ProfilPage        from './pages/ProfilPage'
+import ConfirmerEmailPage from './pages/ConfirmerEmailPage'
 
 // Pages superadmin
 import SuperadminLoginPage          from './pages/superadmin/SuperadminLoginPage'
 import SuperadminBoutiquesPage      from './pages/superadmin/SuperadminBoutiquesPage'
 import SuperadminBoutiqueDetailPage from './pages/superadmin/SuperadminBoutiqueDetailPage'
-import SuperadminStatsPage          from './pages/superadmin/SuperadminStatsPage'
 
 
-
-// ── Wrapper routes protégées avec AppLayout ───
 function ProtectedWithLayout({ children }) {
   return (
     <ProtectedRoute>
-      <AppLayout>
-        {children}
-      </AppLayout>
+      <AppLayout>{children}</AppLayout>
     </ProtectedRoute>
   )
 }
@@ -62,13 +60,18 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* ── Routes publiques ── */}
+      {/* Routes publiques */}
       <Route path="/connexion"   element={<PublicRoute><ConnexionPage /></PublicRoute>} />
       <Route path="/inscription" element={<PublicRoute><InscriptionPage /></PublicRoute>} />
       <Route path="/invitation/:token" element={<InvitationPage />} />
-      
+      <Route path="/2fa-login" element={<DeuxFacteursLoginPage />} />
+      <Route path="/mot-de-passe-oublie"   element={<MotDePasseOubliePage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/choisir-boutique" element={<ChoisirBoutiquePage />} />
+      <Route path="/confirmer-email/:token" element={<ConfirmerEmailPage />} />
 
-      {/* ── Routes protégées avec Sidebar ── */}
+
+      {/* Routes protégées avec Sidebar */}
       <Route path="/dashboard"    element={<ProtectedWithLayout><DashboardPage /></ProtectedWithLayout>} />
       <Route path="/ventes"       element={<ProtectedWithLayout><VentesPage /></ProtectedWithLayout>} />
       <Route path="/produits"     element={<ProtectedWithLayout><ProduitsPage /></ProtectedWithLayout>} />
@@ -81,16 +84,16 @@ function AppRoutes() {
       <Route path="/rapports"     element={<ProtectedWithLayout><RapportsPage /></ProtectedWithLayout>} />
       <Route path="/signalements" element={<ProtectedWithLayout><SignalementsPage /></ProtectedWithLayout>} />
       <Route path="/parametres"   element={<ProtectedWithLayout><ParametresPage /></ProtectedWithLayout>} />
-      <Route path="/choisir-boutique" element={<ChoisirBoutiquePage />} />
+      <Route path="/profil" element={<ProtectedWithLayout><ProfilPage /></ProtectedWithLayout>} />
 
-      {/* ── Routes superadmin — thème sombre inchangé ── */}
-      <Route path="/superadmin/login"           element={<SuperadminLoginPage />} />
-      <Route path="/superadmin/boutiques"       element={<SuperadminRoute><SuperadminBoutiquesPage /></SuperadminRoute>} />
-      <Route path="/superadmin/boutiques/:id"   element={<SuperadminRoute><SuperadminBoutiqueDetailPage /></SuperadminRoute>} />
-      <Route path="/superadmin/stats"           element={<SuperadminRoute><SuperadminStatsPage /></SuperadminRoute>} />
 
-      {/* ── Redirect racine ── */}
-      <Route path="/" element={<Navigate to="/connexion" replace />} />
+      {/* Routes superadmin */}
+      <Route path="/superadmin/login"         element={<SuperadminLoginPage />} />
+      <Route path="/superadmin/boutiques"     element={<SuperadminRoute><SuperadminBoutiquesPage /></SuperadminRoute>} />
+      <Route path="/superadmin/boutiques/:id" element={<SuperadminRoute><SuperadminBoutiqueDetailPage /></SuperadminRoute>} />
+
+      {/* Redirect racine */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
 }

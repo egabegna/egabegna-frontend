@@ -12,21 +12,29 @@ export const useAuth = () => {
     setSession(response.data)
   }, [setSession])
 
-  const login = useCallback(async (formData) => {
-    const response = await api.post('/api/auth/login/', formData)
-    const data = response.data
+ const login = useCallback(async (formData) => {
+  const response = await api.post('/api/auth/login/', formData)
+  const data = response.data
 
-    // Multi-boutique → stocker email + rediriger vers sélecteur
-    if (data.multi_boutique) {
-      localStorage.setItem('mb_email',     formData.email)
-      localStorage.setItem('mb_boutiques', JSON.stringify(data.boutiques))
-      navigate('/choisir-boutique')
-      return
-    }
+  // 2FA activée → stocker token temp + rediriger
+  if (data.deux_facteurs) {
+    localStorage.setItem('2fa_token_temp', data.token_temp)
+    localStorage.setItem('2fa_email',      formData.email)
+    navigate('/2fa-login')
+    return
+  }
 
-    // Mono-boutique → comportement inchangé
-    setSession(data)
-  }, [setSession, navigate])
+  // Multi-boutique
+  if (data.multi_boutique) {
+    localStorage.setItem('mb_email',     formData.email)
+    localStorage.setItem('mb_boutiques', JSON.stringify(data.boutiques))
+    navigate('/choisir-boutique')
+    return
+  }
+
+  // Mono-boutique
+  setSession(data)
+}, [setSession, navigate])
 
   const choisirBoutique = useCallback(async (boutiqueId) => {
     const email = localStorage.getItem('mb_email')
