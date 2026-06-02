@@ -126,17 +126,18 @@ function StockBadge({ stock, seuil }) {
 const bs = { badge: { padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: '0.3px', whiteSpace: 'nowrap' } }
 
 // ── Champ formulaire ──────────────────────────
-function MField({ label, name, value, onChange, type = 'text', error }) {
+function MField({ label, name, type = 'text', value, onChange, error, hint }) {
   return (
-    <div className="pp-modal-field">
+    <div style={ms.fieldGroup}>
       <label style={ms.label}>{label}</label>
       {type === 'textarea'
-        ? <textarea name={name} value={value} onChange={onChange} rows={2}
-            style={{ ...ms.input, resize: 'vertical' }} />
+        ? <textarea name={name} value={value} onChange={onChange}
+            rows={2} style={{ ...ms.input, resize: 'vertical' }} />
         : <input name={name} value={value} onChange={onChange} type={type}
-            style={{ ...ms.input, borderColor: error ? '#c0392b' : BORDER }} />
+            style={{ ...ms.input, borderColor: error ? '#c0392b' : '#EAECEF' }} />
       }
-      {error && <span style={ms.errorMsg}>{error}</span>}
+      {error && <span style={{ color: '#c0392b', fontSize: 12 }}>{error}</span>}
+      {hint  && <span style={{ color: '#B0BEC5', fontSize: 11, marginTop: 3, display: 'block' }}>{hint}</span>}
     </div>
   )
 }
@@ -145,44 +146,90 @@ function MField({ label, name, value, onChange, type = 'text', error }) {
 function ProduitModal({ categories, produit, onClose, onSave }) {
   const isEdit = !!produit
   const [form, setForm] = useState({
-    nom:          produit?.nom          || '',
-    description:  produit?.description  || '',
-    categorie:    produit?.categorie    || '',
-    prix_vente:   produit?.prix_vente   || '',
-    prix_achat:   produit?.prix_achat   || '',
-    stock:        produit?.stock        ?? 0,
-    seuil_alerte: produit?.seuil_alerte ?? 5,
+    nom:              produit?.nom              || '',
+    description:      produit?.description      || '',
+    categorie:        produit?.categorie        || '',
+    prix_vente:       produit?.prix_vente       || '',
+    prix_achat:       produit?.prix_achat       || '',
+    prix_carton:      produit?.prix_carton      || '',
+    stock:            produit?.stock            ?? 0,
+    seuil_alerte:     produit?.seuil_alerte     ?? 5,
+    unite:            produit?.unite            || 'piece',
+    unites_par_carton:produit?.unites_par_carton || '',
+    code_barres:      produit?.code_barres      || '',
   })
   const [errors, setErrors]         = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [genLoading, setGenLoading] = useState(false)
+  const [codeBarresImg, setCodeBarresImg] = useState(null)
+
+  const UNITES = [
+    { value: 'piece',  label: 'Pièce'       },
+    { value: 'carton', label: 'Carton'      },
+    { value: 'kg',     label: 'Kilogramme'  },
+    { value: 'litre',  label: 'Litre'       },
+    { value: 'metre',  label: 'Mètre'       },
+    { value: 'paquet', label: 'Paquet'      },
+    { value: 'sac',    label: 'Sac'         },
+    { value: 'bidon',  label: 'Bidon'       },
+  ]
+
+  const estCarton = form.unite === 'carton'
 
   const handleChange = e => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    setErrors(prev => ({ ...prev, [e.target.name]: '' }))
+    const { name, value } = e.target
+    setForm(prev => ({
+      ...prev,
+      [name]: value,
+      // Réinitialiser unites_par_carton et prix_carton si on quitte carton
+      ...(name === 'unite' && value !== 'carton'
+        ? { unites_par_carton: '', prix_carton: '' }
+        : {}),
+    }))
+    setErrors(prev => ({ ...prev, [name]: '' }))
+  }
+
+  const handleGenererCode = async () => {
+    if (!produit?.id) return
+    setGenLoading(true)
+    try {
+      const res = await produitService.genererCodeBarres(produit.id)
+      setForm(prev => ({ ...prev, code_barres: res.data.code_barres }))
+      setCodeBarresImg(res.data.image)
+    } catch { }
+    finally { setGenLoading(false) }
   }
 
   const handleSubmit = async e => {
     e.preventDefault()
-    if (!form.nom.trim()) { setErrors({ nom: 'Nom requis.' }); return }
-    if (!form.prix_vente) { setErrors({ prix_vente: 'Prix de vente requis.' }); return }
+    if (!form.nom.trim())  { setErrors({ nom: 'Nom requis.' }); return }
+    if (!form.prix_vente)  { setErrors({ prix_vente: 'Prix de vente requis.' }); return }
+    if (estCarton && !form.unites_par_carton) {
+      setErrors({ unites_par_carton: 'Requis si unité = carton.' })
+      return
+    }
     setSubmitting(true)
     try {
       const payload = {
         ...form,
-        categorie:    form.categorie    || null,
-        prix_achat:   form.prix_achat   || null,
-        stock:        Number(form.stock),
-        seuil_alerte: Number(form.seuil_alerte),
-        prix_vente:   Number(form.prix_vente),
+        categorie:         form.categorie         || null,
+        prix_achat:        form.prix_achat         || null,
+        prix_carton:       estCarton && form.prix_carton ? form.prix_carton : null,
+        unites_par_carton: estCarton ? Number(form.unites_par_carton) : null,
+        stock:             Number(form.stock),
+        seuil_alerte:      Number(form.seuil_alerte),
+        prix_vente:        Number(form.prix_vente),
+        code_barres:       form.code_barres || null,
       }
-      isEdit
-        ? await produitService.modifierProduit(produit.id, payload)
-        : await produitService.creerProduit(payload)
+      if (isEdit) await produitService.modifierProduit(produit.id, payload)
+      else        await produitService.creerProduit(payload)
       onSave()
     } catch (err) {
       const data = err.response?.data || {}
       const errs = {}
-      Object.keys(data).forEach(k => { errs[k] = Array.isArray(data[k]) ? data[k][0] : data[k] })
+      Object.keys(data).forEach(k => {
+        errs[k] = Array.isArray(data[k]) ? data[k][0] : data[k]
+      })
       setErrors(errs)
     } finally { setSubmitting(false) }
   }
@@ -191,53 +238,132 @@ function ProduitModal({ categories, produit, onClose, onSave }) {
     <div style={ms.overlay} onClick={onClose}>
       <div style={ms.modal} onClick={e => e.stopPropagation()}>
         <div style={ms.modalHeader}>
-          <div>
-            <div style={ms.modalEyebrow}>{isEdit ? 'Modifier' : 'Créer'}</div>
-            <h2 style={ms.modalTitle}>{isEdit ? produit.nom : 'Nouveau produit'}</h2>
-          </div>
-          <button onClick={onClose} style={ms.closeBtn}><X size={18} color={MUTED} strokeWidth={2} /></button>
+          <h2 style={{ margin: 0, fontSize: 18, color: '#1B2D5B' }}>
+            {isEdit ? 'Modifier le produit' : 'Nouveau produit'}
+          </h2>
+          <button onClick={onClose} style={ms.closeBtn}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={ms.modalBody}>
-          <MField label="Nom *"       name="nom"        value={form.nom}        onChange={handleChange} error={errors.nom} />
-          <MField label="Description" name="description" value={form.description} onChange={handleChange} type="textarea" />
+        <div style={ms.modalBody}>
+          <form onSubmit={handleSubmit} noValidate>
 
-          <div className="pp-modal-row">
-            <MField label="Prix de vente *" name="prix_vente" value={form.prix_vente} onChange={handleChange} type="number" error={errors.prix_vente} />
-            <MField label="Prix d'achat"    name="prix_achat" value={form.prix_achat} onChange={handleChange} type="number" />
-          </div>
+            {/* Nom + Description */}
+            <MField label="Nom *"       name="nom"         value={form.nom}         onChange={handleChange} error={errors.nom} />
+            <MField label="Description" name="description" value={form.description} onChange={handleChange} type="textarea" />
 
-          <div className="pp-modal-row">
-            <MField label="Stock initial" name="stock"        value={form.stock}        onChange={handleChange} type="number" />
-            <MField label="Seuil alerte"  name="seuil_alerte" value={form.seuil_alerte} onChange={handleChange} type="number" />
-          </div>
+            {/* Prix */}
+            <div style={ms.row}>
+              <MField label="Prix de vente *" name="prix_vente" value={form.prix_vente} onChange={handleChange} type="number" error={errors.prix_vente} />
+              <MField label="Prix d'achat"    name="prix_achat" value={form.prix_achat} onChange={handleChange} type="number" />
+            </div>
 
-          <div className="pp-modal-field">
-            <label style={ms.label}>Catégorie</label>
-            <div style={ms.selectWrap}>
+            {/* Unité */}
+            <div style={ms.fieldGroup}>
+              <label style={ms.label}>Unité de vente</label>
+              <select name="unite" value={form.unite} onChange={handleChange} style={ms.select}>
+                {UNITES.map(u => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Conditionnel carton */}
+            {estCarton && (
+              <div style={{ ...ms.row, backgroundColor: '#FBF5E9',
+                            borderRadius: 10, padding: '12px', marginBottom: 16 }}>
+                <MField
+                  label="Unités par carton *"
+                  name="unites_par_carton"
+                  value={form.unites_par_carton}
+                  onChange={handleChange}
+                  type="number"
+                  error={errors.unites_par_carton}
+                  hint="Ex: 12 pièces par carton"
+                />
+                <MField
+                  label="Prix du carton (optionnel)"
+                  name="prix_carton"
+                  value={form.prix_carton}
+                  onChange={handleChange}
+                  type="number"
+                  hint="Calculé auto si vide"
+                />
+              </div>
+            )}
+
+            {/* Stock */}
+            <div style={ms.row}>
+              <MField label="Stock initial" name="stock"        value={form.stock}        onChange={handleChange} type="number" />
+              <MField label="Seuil alerte"  name="seuil_alerte" value={form.seuil_alerte} onChange={handleChange} type="number" />
+            </div>
+
+            {/* Catégorie */}
+            <div style={ms.fieldGroup}>
+              <label style={ms.label}>Catégorie</label>
               <select name="categorie" value={form.categorie || ''} onChange={handleChange} style={ms.select}>
                 <option value="">— Sans catégorie —</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
-              <ChevronDown size={13} color={MUTED} strokeWidth={2} style={ms.selectIcon} />
             </div>
-          </div>
 
-          {errors.detail && <p style={ms.errorMsg}>{errors.detail}</p>}
+            {/* Code-barres */}
+            <div style={ms.fieldGroup}>
+              <label style={ms.label}>Code-barres</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  name="code_barres"
+                  value={form.code_barres}
+                  onChange={handleChange}
+                  placeholder="Saisie manuelle ou généré auto"
+                  style={{ ...ms.input, flex: 1 }}
+                />
+                {isEdit && (
+                  <button
+                    type="button"
+                    onClick={handleGenererCode}
+                    disabled={genLoading}
+                    style={{
+                      ...ms.btnGenerer,
+                      opacity: genLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {genLoading ? '...' : '⚡ Générer'}
+                  </button>
+                )}
+              </div>
+              {/* Aperçu code-barres */}
+              {codeBarresImg && (
+                <div style={ms.codePreview}>
+                  <img src={codeBarresImg} alt="Code-barres"
+                    style={{ maxWidth: '100%', height: 60 }} />
+                </div>
+              )}
+            </div>
 
-          <div style={ms.modalFooter}>
-            <button type="button" onClick={onClose} style={ms.btnSecondary}>Annuler</button>
-            <button type="submit" disabled={submitting} style={ms.btnPrimary}>
-              {submitting ? 'Enregistrement...' : isEdit ? 'Enregistrer' : 'Créer le produit'}
-            </button>
-          </div>
-        </form>
+            {errors.detail && (
+              <p style={{ color: '#c0392b', fontSize: 13 }}>{errors.detail}</p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+              <button type="button" onClick={onClose} style={ms.btnSecondary}>Annuler</button>
+              <button type="submit" disabled={submitting} style={ms.btnPrimary}>
+                {submitting ? '...' : isEdit ? 'Enregistrer' : 'Créer le produit'}
+              </button>
+            </div>
+
+          </form>
+        </div>
       </div>
     </div>
   )
 }
 
 const ms = {
+  btnGenerer:  { backgroundColor: '#1B2D5B', color: '#fff', border: 'none',
+               padding: '9px 14px', borderRadius: 8, cursor: 'pointer',
+               fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' },
+  codePreview: { marginTop: 8, padding: 8, backgroundColor: '#F4F5F7',
+               borderRadius: 8, textAlign: 'center' },
   overlay:     { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 },
   modal:       { background: WHITE, borderRadius: 16, width: '100%', maxWidth: 520, maxHeight: '92vh', overflow: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.15)' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '22px 20px 16px', borderBottom: `1px solid ${BORDER}` },
@@ -254,6 +380,44 @@ const ms = {
   btnPrimary:  { background: NAVY, color: WHITE, border: 'none', padding: '10px 22px', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
   btnSecondary:{ background: BG, color: NAVY, border: 'none', padding: '10px 22px', borderRadius: 9, fontSize: 13, cursor: 'pointer' },
   errorMsg:    { color: '#c0392b', fontSize: 11, marginTop: 4, display: 'block' },
+}
+
+function StockDisplay({ produit }) {
+  const { stock, unite, unites_par_carton } = produit
+
+  // Carton — double affichage
+  if (unite === 'carton' && unites_par_carton) {
+    const cartons = Math.floor(stock / unites_par_carton)
+    const reste   = stock % unites_par_carton
+    return (
+      <div>
+        <span style={{ fontWeight: 700, fontSize: 14, color: '#1B2D5B' }}>
+          {cartons} carton{cartons > 1 ? 's' : ''}
+        </span>
+        {reste > 0 && (
+          <span style={{ fontSize: 12, color: '#B0BEC5', marginLeft: 4 }}>
+            +{reste} pièce{reste > 1 ? 's' : ''}
+          </span>
+        )}
+        <div style={{ fontSize: 11, color: '#B0BEC5' }}>
+          = {stock} pièce{stock > 1 ? 's' : ''}
+        </div>
+      </div>
+    )
+  }
+
+  // Unité simple
+  const LABELS = {
+    piece: 'pièce', kg: 'kg', litre: 'L',
+    metre: 'm', paquet: 'pqt', sac: 'sac', bidon: 'bidon',
+  }
+  const label = LABELS[unite] || unite
+
+  return (
+    <span style={{ fontWeight: 700, fontSize: 14, color: '#1B2D5B' }}>
+      {stock} {label}{stock > 1 && unite === 'piece' ? 's' : ''}
+    </span>
+  )
 }
 
 // ── Drawer historique mouvements ──────────────
@@ -629,8 +793,8 @@ function ProduitsPage() {
                       }
                     </td>
                     <td style={ps.td}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{p.stock}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <StockDisplay produit={p} />
                         <StockBadge stock={p.stock} seuil={p.seuil_alerte} />
                       </div>
                     </td>
