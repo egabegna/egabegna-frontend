@@ -90,39 +90,127 @@ function AutocompleteProduit({ onSelect, boutiqueProduits }) {
 }
 
 // ── LigneVenteRow ─────────────────────────────
-function LigneVenteRow({ ligne, onQteChange, onRemove, compact }) {
-  const stockOk = ligne.produit.stock >= ligne.quantite
+function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
+  const estCarton   = ligne.produit.unite === 'carton'
+  const uniteVente  = ligne.unite_vente || 'piece'
+  const enCarton    = estCarton && uniteVente === 'carton'
+
+  // Prix selon unité choisie
+  const prix = enCarton && ligne.produit.prix_carton_calcule
+    ? Number(ligne.produit.prix_carton_calcule)
+    : Number(ligne.produit.prix_vente)
+
+  // Stock disponible en pièces
+  const stockDispo   = ligne.produit.stock
+  // Quantité en pièces selon l'unité choisie
+  const qteEnPieces  = enCarton
+    ? ligne.quantite * (ligne.produit.unites_par_carton || 1)
+    : ligne.quantite
+
+  const stockInsuffisant = qteEnPieces > stockDispo
+
   return (
-    <div style={{ ...vs.ligneRow, flexWrap: compact ? 'wrap' : 'nowrap', gap: compact ? 8 : 12 }}>
-      <div style={{ flex: 1, minWidth: 0, width: compact ? '100%' : 'auto' }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: NAVY, marginBottom: 2 }}>{ligne.produit.nom}</div>
-        <div style={{ fontSize: 11, color: MUTED, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span>{Number(ligne.produit.prix_vente).toLocaleString()} FCFA / unité</span>
-          {!stockOk && (
-            <span style={{ color: '#c0392b', display: 'flex', alignItems: 'center', gap: 3 }}>
-              <AlertTriangle size={11} strokeWidth={2} />
-              Stock insuffisant ({ligne.produit.stock})
-            </span>
-          )}
+    <div style={vs.ligneRow}>
+      <div style={{ flex: 1 }}>
+        {/* Nom produit */}
+        <div style={{ fontWeight: 600, fontSize: 14 }}>{ligne.produit.nom}</div>
+
+        {/* Prix + stock */}
+        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+          {prix.toLocaleString()} FCFA / {uniteVente === 'carton' ? 'carton' : 'unité'}
+          {' · '}
+          <span style={{ color: stockInsuffisant ? '#dc2626' : '#9ca3af' }}>
+            Stock : {stockDispo} pièce{stockDispo > 1 ? 's' : ''}
+          </span>
         </div>
+
+        {/* Toggle unité — visible uniquement si unite=carton */}
+        {estCarton && (
+          <div style={vs.toggleRow}>
+            {['piece', 'carton'].map(u => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => onUniteChange(ligne.produit.id, u)}
+                style={{
+                  ...vs.toggleBtn,
+                  backgroundColor: uniteVente === u ? '#111827' : '#f3f4f6',
+                  color:           uniteVente === u ? '#fff'    : '#374151',
+                }}
+              >
+                {u === 'piece' ? 'Pièces' : 'Cartons'}
+              </button>
+            ))}
+            {enCarton && ligne.produit.unites_par_carton && (
+              <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>
+                1 carton = {ligne.produit.unites_par_carton} pièces
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Message stock insuffisant */}
+        {stockInsuffisant && (
+          <div style={vs.stockAlert}>
+            ⚠️ Stock insuffisant — {stockDispo} pièce{stockDispo > 1 ? 's' : ''} dispo
+            {enCarton && ` (max ${Math.floor(stockDispo / (ligne.produit.unites_par_carton || 1))} carton(s))`}
+          </div>
+        )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 'auto' : 12, width: compact ? '100%' : 'auto', justifyContent: compact ? 'space-between' : 'flex-end' }}>
-        <div style={vs.qteControl}>
-          <button onClick={() => onQteChange(ligne.produit.id, ligne.quantite - 1)} style={vs.qteBtn} disabled={ligne.quantite <= 1}>
-            <Minus size={13} strokeWidth={2} />
-          </button>
-          <span style={vs.qteVal}>{ligne.quantite}</span>
-          <button onClick={() => onQteChange(ligne.produit.id, ligne.quantite + 1)} style={vs.qteBtn}>
-            <Plus size={13} strokeWidth={2} />
-          </button>
-        </div>
-        <div style={{ fontWeight: 700, fontSize: 13, color: NAVY, minWidth: 80, textAlign: 'right' }}>
-          {(ligne.produit.prix_vente * ligne.quantite).toLocaleString()} F
-        </div>
-        <button onClick={() => onRemove(ligne.produit.id)} style={vs.removeBtn}>
-          <X size={14} strokeWidth={2} color="#c0392b" />
+
+      {/* Contrôle quantité */}
+      <div style={vs.qteControl}>
+        <button
+          type="button"
+          onClick={() => onQteChange(ligne.produit.id, ligne.quantite - 1)}
+          disabled={ligne.quantite <= 1}
+          style={{
+            ...vs.qteBtn,
+            opacity: ligne.quantite <= 1 ? 0.4 : 1,
+          }}
+        >
+          −
+        </button>
+
+        <input
+          type="number"
+          min="1"
+          value={ligne.quantite}
+          onChange={e => {
+            const val = Math.max(1, parseInt(e.target.value) || 1)
+            onQteChange(ligne.produit.id, val)
+          }}
+          style={{
+            ...vs.qteInput,
+            borderColor: stockInsuffisant ? '#ef4444' : '#d1d5db',
+            color:       stockInsuffisant ? '#dc2626' : '#111827',
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => onQteChange(ligne.produit.id, ligne.quantite + 1)}
+          style={vs.qteBtn}
+        >
+          +
         </button>
       </div>
+
+      {/* Sous-total */}
+      <div style={{
+        ...vs.sousTotal,
+        color: stockInsuffisant ? '#dc2626' : '#111827',
+      }}>
+        {(prix * ligne.quantite).toLocaleString()} FCFA
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onRemove(ligne.produit.id)}
+        style={vs.removeBtn}
+      >
+        ✕
+      </button>
     </div>
   )
 }
@@ -134,18 +222,50 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState('')
 
-  const total        = lignes.reduce((acc, l) => acc + Number(l.produit.prix_vente) * l.quantite, 0)
-  const stockInvalide = lignes.some(l => l.produit.stock < l.quantite)
+  const total = lignes.reduce((acc, l) => {
+  const enCarton = l.unite_vente === 'carton'
+  const prix     = enCarton && l.produit.prix_carton_calcule
+    ? Number(l.produit.prix_carton_calcule)
+    : Number(l.produit.prix_vente)
+  return acc + prix * l.quantite
+}, 0)
+
+  const stockInvalide = lignes.some(l => {
+    const enCarton    = l.unite_vente === 'carton'
+    const qteEnPieces = enCarton
+      ? l.quantite * (l.produit.unites_par_carton || 1)
+      : l.quantite
+    return qteEnPieces > l.produit.stock
+  })
 
   const ajouterProduit = (produit) => {
     setError('')
     setLignes(prev => {
       const existe = prev.find(l => l.produit.id === produit.id)
-      if (existe) return prev.map(l => l.produit.id === produit.id ? { ...l, quantite: l.quantite + 1 } : l)
-      return [...prev, { produit, quantite: 1 }]
+      if (existe) {
+        return prev.map(l =>
+          l.produit.id === produit.id
+            ? { ...l, quantite: l.quantite + 1 }
+            : l
+        )
+      }
+      return [...prev, {
+        produit,
+        quantite:    1,
+        unite_vente: produit.unite || 'piece',  // ← initialiser selon le produit
+      }]
     })
   }
 
+  const changerUnite = (produitId, unite) => {
+  setLignes(prev =>
+    prev.map(l =>
+      l.produit.id === produitId
+        ? { ...l, unite_vente: unite, quantite: 1 }  // reset quantité au changement d'unité
+        : l
+      )
+    )
+  }
   const changerQte   = (id, qte) => { if (qte < 1) return; setLignes(prev => prev.map(l => l.produit.id === id ? { ...l, quantite: qte } : l)) }
   const retirerLigne = (id)      => setLignes(prev => prev.filter(l => l.produit.id !== id))
 
@@ -154,8 +274,15 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
     if (stockInvalide)        { setError('Stock insuffisant sur un ou plusieurs produits.'); return }
     setSubmitting(true); setError('')
     try {
-      await venteService.creer({ mode_paiement: mode, lignes: lignes.map(l => ({ produit_id: l.produit.id, quantite: l.quantite })) })
-      setLignes([]); setMode('cash')
+    await venteService.creer({
+      mode_paiement: mode,
+      lignes: lignes.map(l => ({
+        produit_id:  l.produit.id,
+        quantite:    l.quantite,
+        unite_vente: l.unite_vente,   
+      })),
+    })      
+    setLignes([]); setMode('cash')
       onSuccess()
     } catch (err) {
       const d = err.response?.data?.detail
@@ -181,8 +308,7 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
         {lignes.length === 0 ? (
           <div style={vs.vide}>Aucun produit ajouté.</div>
         ) : lignes.map(l => (
-          <LigneVenteRow key={l.produit.id} ligne={l} onQteChange={changerQte} onRemove={retirerLigne} compact={compact} />
-        ))}
+      <LigneVenteRow key={l.produit.id} ligne={l} onQteChange={changerQte} onUniteChange={changerUnite} onRemove={retirerLigne} compact={compact} />        ))}
       </div>
 
       {/* Mode paiement */}
@@ -675,6 +801,17 @@ const vs = {
   btnValider:  { display: 'flex', alignItems: 'center', gap: 8, background: GREEN, color: WHITE, border: 'none', padding: '12px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, transition: 'opacity 0.2s' },
   alertSuccess:{ background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 9, padding: '10px 16px', marginBottom: 14, fontSize: 13, fontWeight: 500 },
   alertError:  { background: '#FEF1F1', border: '1px solid #FBBCBC', color: '#c0392b', borderRadius: 9, padding: '10px 14px', marginTop: 12, fontSize: 13 },
+  // Dans vs = {...} — ajouter :
+  toggleRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 },
+  toggleBtn: { padding: '4px 10px', borderRadius: 6, border: 'none',
+              cursor: 'pointer', fontSize: 11, fontWeight: 600,
+              transition: 'all 0.15s' },
+  qteInput:  { width: 48, height: 28, textAlign: 'center', border: '1.5px solid',
+              borderRadius: 6, fontSize: 14, fontWeight: 700,
+              outline: 'none', boxSizing: 'border-box' },
+  stockAlert:{ fontSize: 12, color: '#dc2626', marginTop: 4,
+              backgroundColor: '#fef2f2', padding: '4px 8px',
+              borderRadius: 6 },
 }
 
 const hs = {
