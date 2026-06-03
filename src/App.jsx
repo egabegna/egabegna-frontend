@@ -32,6 +32,7 @@ import SignalementsPage from './pages/SignalementsPage'
 import ParametresPage   from './pages/ParametresPage'
 import ProfilPage        from './pages/ProfilPage'
 import ConfirmerEmailPage from './pages/ConfirmerEmailPage'
+import ClientsPage from './pages/ClientsPage'
 
 // Pages superadmin
 import SuperadminLoginPage          from './pages/superadmin/SuperadminLoginPage'
@@ -84,7 +85,9 @@ function AppRoutes() {
       <Route path="/rapports"     element={<ProtectedWithLayout><RapportsPage /></ProtectedWithLayout>} />
       <Route path="/signalements" element={<ProtectedWithLayout><SignalementsPage /></ProtectedWithLayout>} />
       <Route path="/parametres"   element={<ProtectedWithLayout><ParametresPage /></ProtectedWithLayout>} />
-      <Route path="/profil" element={<ProtectedWithLayout><ProfilPage /></ProtectedWithLayout>} />
+      <Route path="/profil"       element={<ProtectedWithLayout><ProfilPage /></ProtectedWithLayout>} />
+      <Route path="/clients"      element={<ProtectedWithLayout><ClientsPage /></ProtectedWithLayout>} />
+
 
 
       {/* Routes superadmin */}

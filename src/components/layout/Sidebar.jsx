@@ -6,7 +6,7 @@ import { useSignalementsCount } from '../../hooks/useSignalements'
 import {
   LayoutDashboard, ShoppingCart, Package, Tag, Users, Truck,
   PackageCheck, PersonStanding, Wallet, BarChart2, AlertTriangle,
-  Settings, LogOut, ChevronDown, User,
+  Settings, LogOut, ChevronDown, User, Contact,
 } from 'lucide-react'
 
 const NAVY   = '#1B2D5B'
@@ -34,6 +34,7 @@ const GROUPES_PROPRIETAIRE = [
     label: 'Équipe',
     liens: [
       { path: '/employes', label: 'Employés', Icon: Users },
+      { path: '/clients', label: 'Clients', Icon: Contact },
       { path: '/ambulant', label: 'Ambulant', Icon: PersonStanding },
     ]
   },
