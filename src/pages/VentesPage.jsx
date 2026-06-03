@@ -3,6 +3,7 @@ import { useAuthContext } from '../store/AuthContext'
 import { useDebounce }    from '../hooks/useDebounce'
 import venteService       from '../services/venteService'
 import produitService     from '../services/produitService'
+import ModePaiementSelector from '../components/ModePaiementSelector'
 import {
   Search, X, Minus, Plus, Banknote, Smartphone,
   ClipboardList, CheckCircle, AlertTriangle,
@@ -19,11 +20,6 @@ const BG     = '#F4F5F7'
 const WHITE  = '#FFFFFF'
 const TOPBAR_H = 68
 
-const MODES = [
-  { value: 'cash',         label: 'Cash',        Icon: Banknote     },
-  { value: 'mobile_money', label: 'Mobile Money', Icon: Smartphone   },
-  { value: 'credit',       label: 'Crédit',       Icon: ClipboardList },
-]
 
 // ── useIsMobile ───────────────────────────────
 function useIsMobile() {
@@ -218,7 +214,8 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
 // ── NouvelleVenteForm ─────────────────────────
 function NouvelleVenteForm({ produits, onSuccess, compact }) {
   const [lignes, setLignes]         = useState([])
-  const [mode, setMode]             = useState('cash')
+  const [mode, setMode] = useState('especes')
+  const [refTransaction, setRefTransaction] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState('')
 
@@ -282,7 +279,7 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
         unite_vente: l.unite_vente,   
       })),
     })      
-    setLignes([]); setMode('cash')
+    setLignes([]); setMode('especes'); setRefTransaction('')
       onSuccess()
     } catch (err) {
       const d = err.response?.data?.detail
@@ -312,27 +309,22 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
       </div>
 
       {/* Mode paiement */}
-      <div style={{ marginTop: 14 }}>
-        <div style={vs.modeLabel}>Mode de paiement</div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {MODES.map(({ value, label, Icon }) => {
-            const actif = mode === value
-            return (
-              <button key={value} onClick={() => setMode(value)} style={{
-                ...vs.modeBtn,
-                background: actif ? NAVY : WHITE,
-                color:      actif ? WHITE : '#6B7A99',
-                border:     actif ? `1.5px solid ${NAVY}` : `1.5px solid ${BORDER}`,
-                fontSize:   compact ? 11 : 12,
-                padding:    compact ? '8px 6px' : '9px 8px',
-              }}>
-                <Icon size={13} strokeWidth={1.8} color={actif ? GOLD : MUTED} />
-                <span style={{ display: compact ? 'none' : 'inline' }}>{label}</span>
-              </button>
-            )
-          })}
-        </div>
+      <ModePaiementSelector value={mode} onChange={setMode} />
+
+      {['tmoney', 'flooz', 'virement_bancaire'].includes(mode) && (
+      <div style={{ marginTop: 12 }}>
+        <label style={vs.label}>
+          Référence transaction
+        </label>
+        <input
+          type="text"
+          value={refTransaction}
+          onChange={e => setRefTransaction(e.target.value)}
+          placeholder="Ex: TM-2024-001234"
+          style={vs.input}
+        />
       </div>
+    )}
 
       {/* Total */}
       <div style={{ ...vs.totalRow, flexDirection: compact ? 'column' : 'row', gap: compact ? 12 : 0 }}>
@@ -340,11 +332,17 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
           <div style={vs.totalEyebrow}>Total</div>
           <div style={vs.totalVal}>{total.toLocaleString()} FCFA</div>
         </div>
-        <button onClick={handleSubmit} disabled={disabled}
-          style={{ ...vs.btnValider, opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer', width: compact ? '100%' : 'auto', justifyContent: 'center' }}>
-          <CheckCircle size={16} strokeWidth={2} />
-          <span>{submitting ? 'Enregistrement...' : 'Valider la vente'}</span>
-        </button>
+          <button onClick={handleSubmit} disabled={disabled}
+            style={{
+              ...vs.btnValider,
+              opacity: disabled ? 0.5 : 1,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              width: compact ? '100%' : 'auto',
+              justifyContent: 'center',
+            }}>
+            <CheckCircle size={16} strokeWidth={2} />
+            <span>{submitting ? 'Enregistrement...' : 'Valider la vente'}</span>
+          </button>
       </div>
 
       {error && <div style={vs.alertError}>{error}</div>}
@@ -624,8 +622,15 @@ function HistoriqueVentes({ role, refreshKey }) {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <CustomSelect name="statut" value={filtres.statut} onChange={handleFiltreChange}
               options={[{ value: '', label: 'Tous statuts' }, { value: 'validee', label: 'Validée' }, { value: 'annulee', label: 'Annulée' }]} />
-            <CustomSelect name="mode_paiement" value={filtres.mode_paiement} onChange={handleFiltreChange}
-              options={[{ value: '', label: 'Tous modes' }, { value: 'cash', label: 'Cash' }, { value: 'mobile_money', label: 'Mobile Money' }, { value: 'credit', label: 'Crédit' }]} />
+          <CustomSelect name="mode_paiement" value={filtres.mode_paiement} onChange={handleFiltreChange}
+            options={[
+              { value: '', label: 'Tous modes' },
+              { value: 'especes', label: 'Espèces' },
+              { value: 'tmoney', label: 'Tmoney' },
+              { value: 'flooz', label: 'Flooz' },
+              { value: 'virement_bancaire', label: 'Bancaire' },
+              { value: 'credit', label: 'Crédit' },
+            ]} />
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <CustomDatePicker name="date_debut" value={filtres.date_debut} onChange={handleFiltreChange} placeholder="Début" />
