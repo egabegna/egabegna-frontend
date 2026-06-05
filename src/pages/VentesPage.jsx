@@ -4,6 +4,7 @@ import { useDebounce }    from '../hooks/useDebounce'
 import venteService       from '../services/venteService'
 import produitService     from '../services/produitService'
 import ModePaiementSelector from '../components/ModePaiementSelector'
+import ClientAutocomplete from '../components/ClientAutocomplete'
 import {
   Search, X, Minus, Plus, Banknote, Smartphone,
   ClipboardList, CheckCircle, AlertTriangle,
@@ -218,14 +219,24 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
   const [refTransaction, setRefTransaction] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState('')
+  const [client, setClient]   = useState(null)
+  const { devise, remise_fidelite_pct } = useAuthContext()
 
-  const total = lignes.reduce((acc, l) => {
+  const remisePct = client?.est_client_fidele ? Number(remise_fidelite_pct || 5) : 0
+
+  const totalBrut   = lignes.reduce((acc, l) => {
   const enCarton = l.unite_vente === 'carton'
   const prix     = enCarton && l.produit.prix_carton_calcule
     ? Number(l.produit.prix_carton_calcule)
     : Number(l.produit.prix_vente)
   return acc + prix * l.quantite
 }, 0)
+
+  const montantRemise   = remisePct > 0
+    ? (totalBrut * remisePct / 100)
+    : 0
+
+  const totalFinal = totalBrut - montantRemise
 
   const stockInvalide = lignes.some(l => {
     const enCarton    = l.unite_vente === 'carton'
@@ -271,15 +282,17 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
     if (stockInvalide)        { setError('Stock insuffisant sur un ou plusieurs produits.'); return }
     setSubmitting(true); setError('')
     try {
-    await venteService.creer({
-      mode_paiement: mode,
-      lignes: lignes.map(l => ({
-        produit_id:  l.produit.id,
-        quantite:    l.quantite,
-        unite_vente: l.unite_vente,   
-      })),
-    })      
-    setLignes([]); setMode('especes'); setRefTransaction('')
+      await venteService.creer({
+        mode_paiement:         mode,
+        reference_transaction: refTransaction || null,
+        client_id:             client?.id || null,
+        lignes: lignes.map(l => ({
+          produit_id:  l.produit.id,
+          quantite:    l.quantite,
+          unite_vente: l.unite_vente,
+        })),
+      })     
+    setLignes([]); setMode('especes'); setRefTransaction(''); setClient(null)
       onSuccess()
     } catch (err) {
       const d = err.response?.data?.detail
@@ -308,6 +321,36 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
       <LigneVenteRow key={l.produit.id} ligne={l} onQteChange={changerQte} onUniteChange={changerUnite} onRemove={retirerLigne} compact={compact} />        ))}
       </div>
 
+      {/* Section client */}
+      <div style={{ marginBottom: 16 }}>
+        <ClientAutocomplete
+          value={client}
+          onChange={setClient}
+          remisePct={remisePct}
+        />
+      </div>
+
+      {/* Affichage remise si applicable */}
+      {remisePct > 0 && client?.est_client_fidele && (
+        <div style={vs.remiseInfo}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ color: '#6b7280' }}>Sous-total</span>
+            <span>{totalBrut.toLocaleString()} FCFA</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between',
+                        fontSize: 13, color: GREEN }}>
+            <span>Remise fidélité ({remisePct}%)</span>
+            <span>− {montantRemise.toLocaleString()} FCFA</span>
+          </div>
+          <div style={vs.remiseSep} />
+          <div style={{ display: 'flex', justifyContent: 'space-between',
+                        fontSize: 16, fontWeight: 800, color: NAVY }}>
+            <span>Total à payer</span>
+            <span>{totalFinal.toLocaleString()} FCFA</span>
+          </div>
+        </div>
+      )}
+
       {/* Mode paiement */}
       <ModePaiementSelector value={mode} onChange={setMode} />
 
@@ -328,9 +371,11 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
 
       {/* Total */}
       <div style={{ ...vs.totalRow, flexDirection: compact ? 'column' : 'row', gap: compact ? 12 : 0 }}>
-        <div>
-          <div style={vs.totalEyebrow}>Total</div>
-          <div style={vs.totalVal}>{total.toLocaleString()} FCFA</div>
+        <div style={vs.totalRow}>
+          <span>Total</span>
+          <span style={{ fontWeight: 800, fontSize: 18, color: NAVY }}>
+            {totalFinal.toLocaleString()} FCFA
+          </span>
         </div>
           <button onClick={handleSubmit} disabled={disabled}
             style={{
@@ -817,7 +862,10 @@ const vs = {
   stockAlert:{ fontSize: 12, color: '#dc2626', marginTop: 4,
               backgroundColor: '#fef2f2', padding: '4px 8px',
               borderRadius: 6 },
+              remiseInfo: { backgroundColor: '#EBF5EF', border: '1px solid #A8D5B5', borderRadius: 10, padding: '12px 14px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 },
+remiseSep: { height: 1, backgroundColor: '#A8D5B5', margin: '4px 0' },
 }
+
 
 const hs = {
   wrapper:       { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 16, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
