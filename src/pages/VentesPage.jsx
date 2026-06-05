@@ -5,6 +5,7 @@ import venteService       from '../services/venteService'
 import produitService     from '../services/produitService'
 import ModePaiementSelector from '../components/ModePaiementSelector'
 import ClientAutocomplete from '../components/ClientAutocomplete'
+import BoutonRecuPDF from '../components/BoutonRecuPDF'
 import {
   Search, X, Minus, Plus, Banknote, Smartphone,
   ClipboardList, CheckCircle, AlertTriangle,
@@ -92,14 +93,11 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
   const uniteVente  = ligne.unite_vente || 'piece'
   const enCarton    = estCarton && uniteVente === 'carton'
 
-  // Prix selon unité choisie
   const prix = enCarton && ligne.produit.prix_carton_calcule
     ? Number(ligne.produit.prix_carton_calcule)
     : Number(ligne.produit.prix_vente)
 
-  // Stock disponible en pièces
   const stockDispo   = ligne.produit.stock
-  // Quantité en pièces selon l'unité choisie
   const qteEnPieces  = enCarton
     ? ligne.quantite * (ligne.produit.unites_par_carton || 1)
     : ligne.quantite
@@ -109,10 +107,7 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
   return (
     <div style={vs.ligneRow}>
       <div style={{ flex: 1 }}>
-        {/* Nom produit */}
         <div style={{ fontWeight: 600, fontSize: 14 }}>{ligne.produit.nom}</div>
-
-        {/* Prix + stock */}
         <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
           {prix.toLocaleString()} FCFA / {uniteVente === 'carton' ? 'carton' : 'unité'}
           {' · '}
@@ -120,8 +115,6 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
             Stock : {stockDispo} pièce{stockDispo > 1 ? 's' : ''}
           </span>
         </div>
-
-        {/* Toggle unité — visible uniquement si unite=carton */}
         {estCarton && (
           <div style={vs.toggleRow}>
             {['piece', 'carton'].map(u => (
@@ -145,8 +138,6 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
             )}
           </div>
         )}
-
-        {/* Message stock insuffisant */}
         {stockInsuffisant && (
           <div style={vs.stockAlert}>
             ⚠️ Stock insuffisant — {stockDispo} pièce{stockDispo > 1 ? 's' : ''} dispo
@@ -155,20 +146,15 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
         )}
       </div>
 
-      {/* Contrôle quantité */}
       <div style={vs.qteControl}>
         <button
           type="button"
           onClick={() => onQteChange(ligne.produit.id, ligne.quantite - 1)}
           disabled={ligne.quantite <= 1}
-          style={{
-            ...vs.qteBtn,
-            opacity: ligne.quantite <= 1 ? 0.4 : 1,
-          }}
+          style={{ ...vs.qteBtn, opacity: ligne.quantite <= 1 ? 0.4 : 1 }}
         >
           −
         </button>
-
         <input
           type="number"
           min="1"
@@ -183,7 +169,6 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
             color:       stockInsuffisant ? '#dc2626' : '#111827',
           }}
         />
-
         <button
           type="button"
           onClick={() => onQteChange(ligne.produit.id, ligne.quantite + 1)}
@@ -193,19 +178,11 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
         </button>
       </div>
 
-      {/* Sous-total */}
-      <div style={{
-        ...vs.sousTotal,
-        color: stockInsuffisant ? '#dc2626' : '#111827',
-      }}>
+      <div style={{ ...vs.sousTotal, color: stockInsuffisant ? '#dc2626' : '#111827' }}>
         {(prix * ligne.quantite).toLocaleString()} FCFA
       </div>
 
-      <button
-        type="button"
-        onClick={() => onRemove(ligne.produit.id)}
-        style={vs.removeBtn}
-      >
+      <button type="button" onClick={() => onRemove(ligne.produit.id)} style={vs.removeBtn}>
         ✕
       </button>
     </div>
@@ -214,29 +191,27 @@ function LigneVenteRow({ ligne, onQteChange, onUniteChange, onRemove }) {
 
 // ── NouvelleVenteForm ─────────────────────────
 function NouvelleVenteForm({ produits, onSuccess, compact }) {
-  const [lignes, setLignes]         = useState([])
-  const [mode, setMode] = useState('especes')
+  const [lignes, setLignes]                 = useState([])
+  const [mode, setMode]                     = useState('especes')
   const [refTransaction, setRefTransaction] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError]           = useState('')
-  const [client, setClient]   = useState(null)
-  const { devise, remise_fidelite_pct } = useAuthContext()
+  const [submitting, setSubmitting]         = useState(false)
+  const [error, setError]                   = useState('')
+  const [client, setClient]                 = useState(null)
+  const [venteCreee, setVenteCreee]         = useState(null)
+  const { devise, remise_fidelite_pct }     = useAuthContext()
 
   const remisePct = client?.est_client_fidele ? Number(remise_fidelite_pct || 5) : 0
 
-  const totalBrut   = lignes.reduce((acc, l) => {
-  const enCarton = l.unite_vente === 'carton'
-  const prix     = enCarton && l.produit.prix_carton_calcule
-    ? Number(l.produit.prix_carton_calcule)
-    : Number(l.produit.prix_vente)
-  return acc + prix * l.quantite
-}, 0)
+  const totalBrut = lignes.reduce((acc, l) => {
+    const enCarton = l.unite_vente === 'carton'
+    const prix     = enCarton && l.produit.prix_carton_calcule
+      ? Number(l.produit.prix_carton_calcule)
+      : Number(l.produit.prix_vente)
+    return acc + prix * l.quantite
+  }, 0)
 
-  const montantRemise   = remisePct > 0
-    ? (totalBrut * remisePct / 100)
-    : 0
-
-  const totalFinal = totalBrut - montantRemise
+  const montantRemise = remisePct > 0 ? (totalBrut * remisePct / 100) : 0
+  const totalFinal    = totalBrut - montantRemise
 
   const stockInvalide = lignes.some(l => {
     const enCarton    = l.unite_vente === 'carton'
@@ -252,28 +227,21 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
       const existe = prev.find(l => l.produit.id === produit.id)
       if (existe) {
         return prev.map(l =>
-          l.produit.id === produit.id
-            ? { ...l, quantite: l.quantite + 1 }
-            : l
+          l.produit.id === produit.id ? { ...l, quantite: l.quantite + 1 } : l
         )
       }
-      return [...prev, {
-        produit,
-        quantite:    1,
-        unite_vente: produit.unite || 'piece',  // ← initialiser selon le produit
-      }]
+      return [...prev, { produit, quantite: 1, unite_vente: produit.unite || 'piece' }]
     })
   }
 
   const changerUnite = (produitId, unite) => {
-  setLignes(prev =>
-    prev.map(l =>
-      l.produit.id === produitId
-        ? { ...l, unite_vente: unite, quantite: 1 }  // reset quantité au changement d'unité
-        : l
+    setLignes(prev =>
+      prev.map(l =>
+        l.produit.id === produitId ? { ...l, unite_vente: unite, quantite: 1 } : l
       )
     )
   }
+
   const changerQte   = (id, qte) => { if (qte < 1) return; setLignes(prev => prev.map(l => l.produit.id === id ? { ...l, quantite: qte } : l)) }
   const retirerLigne = (id)      => setLignes(prev => prev.filter(l => l.produit.id !== id))
 
@@ -282,7 +250,7 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
     if (stockInvalide)        { setError('Stock insuffisant sur un ou plusieurs produits.'); return }
     setSubmitting(true); setError('')
     try {
-      await venteService.creer({
+      const response = await venteService.creer({
         mode_paiement:         mode,
         reference_transaction: refTransaction || null,
         client_id:             client?.id || null,
@@ -291,8 +259,10 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
           quantite:    l.quantite,
           unite_vente: l.unite_vente,
         })),
-      })     
-    setLignes([]); setMode('especes'); setRefTransaction(''); setClient(null)
+      })
+      console.log('response.data:', response.data)  // ← ajoute ça
+      setLignes([]); setMode('especes'); setRefTransaction(''); setClient(null)
+      setVenteCreee(response.data)
       onSuccess()
     } catch (err) {
       const d = err.response?.data?.detail
@@ -302,6 +272,28 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
 
   const disabled = submitting || lignes.length === 0 || stockInvalide
 
+  // ── Panneau succès — remplace le formulaire après validation
+  if (venteCreee) {
+    return (
+      <div style={vs.formCard}>
+        <div style={vs.successPanel}>
+          <div style={vs.successIcon}>✓</div>
+          <h3 style={{ color: '#2D7A4F', margin: '0 0 8px' }}>Vente enregistrée !</h3>
+          <p style={{ color: '#6b7280', fontSize: 13, margin: '0 0 16px' }}>
+            Vente #{venteCreee.id} — {Number(venteCreee.total_final).toLocaleString()} FCFA
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <BoutonRecuPDF venteId={venteCreee.id} venteDate={venteCreee.date} />
+            <button onClick={() => setVenteCreee(null)} style={vs.btnNouvelleVente}>
+              + Nouvelle vente
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Formulaire normal
   return (
     <div style={vs.formCard}>
       <div style={vs.formHeader}>
@@ -318,33 +310,28 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
         {lignes.length === 0 ? (
           <div style={vs.vide}>Aucun produit ajouté.</div>
         ) : lignes.map(l => (
-      <LigneVenteRow key={l.produit.id} ligne={l} onQteChange={changerQte} onUniteChange={changerUnite} onRemove={retirerLigne} compact={compact} />        ))}
+          <LigneVenteRow key={l.produit.id} ligne={l} onQteChange={changerQte} onUniteChange={changerUnite} onRemove={retirerLigne} compact={compact} />
+        ))}
       </div>
 
       {/* Section client */}
       <div style={{ marginBottom: 16 }}>
-        <ClientAutocomplete
-          value={client}
-          onChange={setClient}
-          remisePct={remisePct}
-        />
+        <ClientAutocomplete value={client} onChange={setClient} remisePct={remisePct} />
       </div>
 
-      {/* Affichage remise si applicable */}
+      {/* Remise fidélité */}
       {remisePct > 0 && client?.est_client_fidele && (
         <div style={vs.remiseInfo}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
             <span style={{ color: '#6b7280' }}>Sous-total</span>
             <span>{totalBrut.toLocaleString()} FCFA</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between',
-                        fontSize: 13, color: GREEN }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: GREEN }}>
             <span>Remise fidélité ({remisePct}%)</span>
             <span>− {montantRemise.toLocaleString()} FCFA</span>
           </div>
           <div style={vs.remiseSep} />
-          <div style={{ display: 'flex', justifyContent: 'space-between',
-                        fontSize: 16, fontWeight: 800, color: NAVY }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, color: NAVY }}>
             <span>Total à payer</span>
             <span>{totalFinal.toLocaleString()} FCFA</span>
           </div>
@@ -355,21 +342,19 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
       <ModePaiementSelector value={mode} onChange={setMode} />
 
       {['tmoney', 'flooz', 'virement_bancaire'].includes(mode) && (
-      <div style={{ marginTop: 12 }}>
-        <label style={vs.label}>
-          Référence transaction
-        </label>
-        <input
-          type="text"
-          value={refTransaction}
-          onChange={e => setRefTransaction(e.target.value)}
-          placeholder="Ex: TM-2024-001234"
-          style={vs.input}
-        />
-      </div>
-    )}
+        <div style={{ marginTop: 12 }}>
+          <label style={vs.label}>Référence transaction</label>
+          <input
+            type="text"
+            value={refTransaction}
+            onChange={e => setRefTransaction(e.target.value)}
+            placeholder="Ex: TM-2024-001234"
+            style={vs.input}
+          />
+        </div>
+      )}
 
-      {/* Total */}
+      {/* Total + bouton valider */}
       <div style={{ ...vs.totalRow, flexDirection: compact ? 'column' : 'row', gap: compact ? 12 : 0 }}>
         <div style={vs.totalRow}>
           <span>Total</span>
@@ -377,17 +362,17 @@ function NouvelleVenteForm({ produits, onSuccess, compact }) {
             {totalFinal.toLocaleString()} FCFA
           </span>
         </div>
-          <button onClick={handleSubmit} disabled={disabled}
-            style={{
-              ...vs.btnValider,
-              opacity: disabled ? 0.5 : 1,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-              width: compact ? '100%' : 'auto',
-              justifyContent: 'center',
-            }}>
-            <CheckCircle size={16} strokeWidth={2} />
-            <span>{submitting ? 'Enregistrement...' : 'Valider la vente'}</span>
-          </button>
+        <button onClick={handleSubmit} disabled={disabled}
+          style={{
+            ...vs.btnValider,
+            opacity:        disabled ? 0.5 : 1,
+            cursor:         disabled ? 'not-allowed' : 'pointer',
+            width:          compact ? '100%' : 'auto',
+            justifyContent: 'center',
+          }}>
+          <CheckCircle size={16} strokeWidth={2} />
+          <span>{submitting ? 'Enregistrement...' : 'Valider la vente'}</span>
+        </button>
       </div>
 
       {error && <div style={vs.alertError}>{error}</div>}
@@ -462,6 +447,11 @@ function VenteDrawer({ vente, role, onClose, onAnnuler }) {
             <span style={dr.totalVal}>{Number(vente.total).toLocaleString()} FCFA</span>
           </div>
           {vente.note && <p style={{ fontSize: 12, color: MUTED, marginTop: 12 }}>Note : {vente.note}</p>}
+          {validee && (
+            <div style={{ marginTop: 16, textAlign: 'center' }}>
+              <BoutonRecuPDF venteId={vente.id} venteDate={vente.date} variant="secondary" />
+            </div>
+          )}
           {['proprietaire', 'manager'].includes(role) && validee && (
             <div style={{ marginTop: 20 }}>
               {error && <div style={dr.alertError}>{error}</div>}
@@ -531,22 +521,22 @@ const JOURS   = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
 const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 
 function CustomDatePicker({ name, value, onChange, placeholder = 'Date' }) {
-  const [open, setOpen]       = useState(false)
+  const [open, setOpen]         = useState(false)
   const [viewDate, setViewDate] = useState(() => value ? new Date(value) : new Date())
-  const ref                   = useRef(null)
+  const ref                     = useRef(null)
   useEffect(() => {
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
-  const selected   = value ? new Date(value) : null
+  const selected     = value ? new Date(value) : null
   const handleSelect = (date) => { onChange({ target: { name, value: date.toISOString().split('T')[0] } }); setOpen(false) }
   const handleClear  = (e)    => { e.stopPropagation(); onChange({ target: { name, value: '' } }) }
-  const prevMonth  = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
-  const nextMonth  = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
-  const firstDay   = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
-  const lastDay    = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
-  const startOffset = (firstDay.getDay() + 6) % 7
+  const prevMonth    = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+  const nextMonth    = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+  const firstDay     = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
+  const lastDay      = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
+  const startOffset  = (firstDay.getDay() + 6) % 7
   const cells = []
   for (let i = 0; i < startOffset; i++) cells.push(null)
   for (let d = 1; d <= lastDay.getDate(); d++) cells.push(d)
@@ -608,16 +598,16 @@ const dp = {
 
 // ── HistoriqueVentes ──────────────────────────
 function HistoriqueVentes({ role, refreshKey }) {
-  const [ventes, setVentes]           = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [selected, setSelected]       = useState(null)
-  const [filtres, setFiltres]         = useState({ statut: '', mode_paiement: '', date_debut: '', date_fin: '' })
-  const [totalJour, setTotalJour]     = useState(0)
-  const [page, setPage]               = useState(1)
-  const [hasNext, setHasNext]         = useState(false)
+  const [ventes, setVentes]               = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [selected, setSelected]           = useState(null)
+  const [filtres, setFiltres]             = useState({ statut: '', mode_paiement: '', date_debut: '', date_fin: '' })
+  const [totalJour, setTotalJour]         = useState(0)
+  const [page, setPage]                   = useState(1)
+  const [hasNext, setHasNext]             = useState(false)
   const [searchEmploye, setSearchEmploye] = useState('')
-  const [showFiltres, setShowFiltres] = useState(false)
-  const isMobile                      = useIsMobile()
+  const [showFiltres, setShowFiltres]     = useState(false)
+  const isMobile                          = useIsMobile()
 
   const charger = useCallback(async () => {
     setLoading(true)
@@ -661,21 +651,21 @@ function HistoriqueVentes({ role, refreshKey }) {
         </div>
       </div>
 
-      {/* Filtres : toujours visibles desktop, toggle mobile */}
+      {/* Filtres */}
       {(!isMobile || showFiltres) && (
         <div style={{ ...hs.filtres, flexDirection: isMobile ? 'column' : 'row' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <CustomSelect name="statut" value={filtres.statut} onChange={handleFiltreChange}
               options={[{ value: '', label: 'Tous statuts' }, { value: 'validee', label: 'Validée' }, { value: 'annulee', label: 'Annulée' }]} />
-          <CustomSelect name="mode_paiement" value={filtres.mode_paiement} onChange={handleFiltreChange}
-            options={[
-              { value: '', label: 'Tous modes' },
-              { value: 'especes', label: 'Espèces' },
-              { value: 'tmoney', label: 'Tmoney' },
-              { value: 'flooz', label: 'Flooz' },
-              { value: 'virement_bancaire', label: 'Bancaire' },
-              { value: 'credit', label: 'Crédit' },
-            ]} />
+            <CustomSelect name="mode_paiement" value={filtres.mode_paiement} onChange={handleFiltreChange}
+              options={[
+                { value: '', label: 'Tous modes' },
+                { value: 'especes', label: 'Espèces' },
+                { value: 'tmoney', label: 'Tmoney' },
+                { value: 'flooz', label: 'Flooz' },
+                { value: 'virement_bancaire', label: 'Bancaire' },
+                { value: 'credit', label: 'Crédit' },
+              ]} />
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <CustomDatePicker name="date_debut" value={filtres.date_debut} onChange={handleFiltreChange} placeholder="Début" />
@@ -751,7 +741,7 @@ function VentesPage() {
   const [produits, setProduits]     = useState([])
   const [refreshKey, setRefreshKey] = useState(0)
   const [successMsg, setSuccessMsg] = useState('')
-  const [mobileView, setMobileView] = useState('vente') // 'vente' | 'historique'
+  const [mobileView, setMobileView] = useState('vente')
   const isMobile                    = useIsMobile()
 
   useEffect(() => {
@@ -795,7 +785,7 @@ function VentesPage() {
         </div>
       )}
 
-      {/* Desktop : layout 2 colonnes */}
+      {/* Desktop : 2 colonnes */}
       {!isMobile ? (
         <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20, flex: 1, minHeight: 0 }}>
           <div style={{ position: 'sticky', top: 0, height: 'fit-content', alignSelf: 'start' }}>
@@ -806,7 +796,6 @@ function VentesPage() {
           </div>
         </div>
       ) : (
-        /* Mobile : une vue à la fois */
         <div style={{ flex: 1 }}>
           {mobileView === 'vente' && (
             <NouvelleVenteForm produits={produits} onSuccess={apresVente} compact={true} />
@@ -851,39 +840,64 @@ const vs = {
   btnValider:  { display: 'flex', alignItems: 'center', gap: 8, background: GREEN, color: WHITE, border: 'none', padding: '12px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, transition: 'opacity 0.2s' },
   alertSuccess:{ background: '#EBF5EF', border: `1px solid #A8D5B5`, color: GREEN, borderRadius: 9, padding: '10px 16px', marginBottom: 14, fontSize: 13, fontWeight: 500 },
   alertError:  { background: '#FEF1F1', border: '1px solid #FBBCBC', color: '#c0392b', borderRadius: 9, padding: '10px 14px', marginTop: 12, fontSize: 13 },
-  // Dans vs = {...} — ajouter :
-  toggleRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 },
-  toggleBtn: { padding: '4px 10px', borderRadius: 6, border: 'none',
-              cursor: 'pointer', fontSize: 11, fontWeight: 600,
-              transition: 'all 0.15s' },
-  qteInput:  { width: 48, height: 28, textAlign: 'center', border: '1.5px solid',
-              borderRadius: 6, fontSize: 14, fontWeight: 700,
-              outline: 'none', boxSizing: 'border-box' },
-  stockAlert:{ fontSize: 12, color: '#dc2626', marginTop: 4,
-              backgroundColor: '#fef2f2', padding: '4px 8px',
-              borderRadius: 6 },
-              remiseInfo: { backgroundColor: '#EBF5EF', border: '1px solid #A8D5B5', borderRadius: 10, padding: '12px 14px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 },
-remiseSep: { height: 1, backgroundColor: '#A8D5B5', margin: '4px 0' },
+  label:       { fontSize: 11, fontWeight: 600, color: MUTED, letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: 6 },
+  input:       { width: '100%', border: `1.5px solid ${BORDER}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: NAVY, outline: 'none', boxSizing: 'border-box' },
+  toggleRow:   { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 },
+  toggleBtn:   { padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' },
+  qteInput:    { width: 48, height: 28, textAlign: 'center', border: '1.5px solid', borderRadius: 6, fontSize: 14, fontWeight: 700, outline: 'none', boxSizing: 'border-box' },
+  stockAlert:  { fontSize: 12, color: '#dc2626', marginTop: 4, backgroundColor: '#fef2f2', padding: '4px 8px', borderRadius: 6 },
+  sousTotal:   { fontWeight: 700, fontSize: 13, flexShrink: 0 },
+  remiseInfo:  { backgroundColor: '#EBF5EF', border: '1px solid #A8D5B5', borderRadius: 10, padding: '12px 14px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 },
+  remiseSep:   { height: 1, backgroundColor: '#A8D5B5', margin: '4px 0' },
+  successPanel: {
+    textAlign:       'center',
+    padding:         '32px 24px',
+    backgroundColor: '#EBF5EF',
+    borderRadius:    14,
+    border:          '1px solid #A8D5B5',
+  },
+  successIcon: {
+    width:           52,
+    height:          52,
+    borderRadius:    '50%',
+    backgroundColor: '#2D7A4F',
+    color:           '#fff',
+    fontSize:        24,
+    fontWeight:      700,
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    margin:          '0 auto 16px',
+  },
+  btnNouvelleVente: {
+    backgroundColor: '#1B2D5B',
+    color:           '#fff',
+    border:          'none',
+    padding:         '10px 18px',
+    borderRadius:    9,
+    fontSize:        13,
+    fontWeight:      700,
+    cursor:          'pointer',
+  },
 }
 
-
 const hs = {
-  wrapper:       { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 16, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
-  headerRow:     { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 },
-  title:         { fontSize: 11, fontWeight: 700, color: NAVY, letterSpacing: '2px', textTransform: 'uppercase' },
-  totalJour:     { fontSize: 11, color: GREEN, background: '#EBF5EF', padding: '4px 10px', borderRadius: 20, fontWeight: 500 },
-  filterToggle:  { display: 'flex', alignItems: 'center', gap: 5, border: 'none', padding: '5px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700 },
-  filtres:       { display: 'flex', gap: 8, padding: '10px 14px', flexWrap: 'wrap', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 },
-  searchBar:     { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0, background: WHITE },
-  searchWrap:    { display: 'flex', alignItems: 'center', gap: 8, flex: 1, border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: '7px 12px', background: BG },
-  searchInput:   { flex: 1, border: 'none', outline: 'none', fontSize: 12, color: NAVY, background: 'transparent' },
-  clearBtn:      { background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center', flexShrink: 0 },
-  liste:         { flex: 1, overflowY: 'auto', minHeight: 0 },
-  row:           { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${BG}`, cursor: 'pointer', transition: 'background 0.1s', background: WHITE },
-  annuleeBadge:  { background: '#FEF1F1', color: '#c0392b', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8 },
-  pagination:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderTop: `1px solid ${BORDER}`, flexShrink: 0 },
-  pageBtn:       { display: 'flex', alignItems: 'center', gap: 4, background: BG, border: 'none', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: NAVY, fontWeight: 500 },
-  empty:         { color: MUTED, textAlign: 'center', padding: 24, fontSize: 13 },
+  wrapper:      { background: WHITE, border: `1px solid ${BORDER}`, borderRadius: 16, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
+  headerRow:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 },
+  title:        { fontSize: 11, fontWeight: 700, color: NAVY, letterSpacing: '2px', textTransform: 'uppercase' },
+  totalJour:    { fontSize: 11, color: GREEN, background: '#EBF5EF', padding: '4px 10px', borderRadius: 20, fontWeight: 500 },
+  filterToggle: { display: 'flex', alignItems: 'center', gap: 5, border: 'none', padding: '5px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700 },
+  filtres:      { display: 'flex', gap: 8, padding: '10px 14px', flexWrap: 'wrap', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 },
+  searchBar:    { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0, background: WHITE },
+  searchWrap:   { display: 'flex', alignItems: 'center', gap: 8, flex: 1, border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: '7px 12px', background: BG },
+  searchInput:  { flex: 1, border: 'none', outline: 'none', fontSize: 12, color: NAVY, background: 'transparent' },
+  clearBtn:     { background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center', flexShrink: 0 },
+  liste:        { flex: 1, overflowY: 'auto', minHeight: 0 },
+  row:          { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${BG}`, cursor: 'pointer', transition: 'background 0.1s', background: WHITE },
+  annuleeBadge: { background: '#FEF1F1', color: '#c0392b', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8 },
+  pagination:   { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderTop: `1px solid ${BORDER}`, flexShrink: 0 },
+  pageBtn:      { display: 'flex', alignItems: 'center', gap: 4, background: BG, border: 'none', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: NAVY, fontWeight: 500 },
+  empty:        { color: MUTED, textAlign: 'center', padding: 24, fontSize: 13 },
 }
 
 const dr = {
