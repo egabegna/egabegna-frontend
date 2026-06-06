@@ -3,6 +3,7 @@ import { useAuthContext } from '../store/AuthContext'
 import { useSearchParams, useNavigate } from 'react-router-dom' 
 import { useDebounce } from '../hooks/useDebounce'
 import produitService from '../services/produitService'
+import HistoriquePrixOnglet from '../components/HistoriquePrixOnglet'
 import {
   Search, Plus, Pencil, X, TrendingUp, TrendingDown,
   SlidersHorizontal, ArrowUpDown, ChevronDown,ArrowLeft
@@ -162,6 +163,7 @@ function ProduitModal({ categories, produit, onClose, onSave }) {
   const [submitting, setSubmitting] = useState(false)
   const [genLoading, setGenLoading] = useState(false)
   const [codeBarresImg, setCodeBarresImg] = useState(null)
+  const [ongletProduit, setOngletProduit] = useState('infos')
 
   const UNITES = [
     { value: 'piece',  label: 'Pièce'       },
@@ -238,6 +240,20 @@ function ProduitModal({ categories, produit, onClose, onSave }) {
     <div style={ms.overlay} onClick={onClose}>
       <div style={ms.modal} onClick={e => e.stopPropagation()}>
         <div style={ms.modalHeader}>
+          <div style={ms.tabs}>
+            {[['infos', 'Informations'], ['prix', 'Historique prix']].map(([k, label]) => (
+              <button key={k} onClick={() => setOngletProduit(k)}
+                style={{
+                  ...ms.tab,
+                  color:        ongletProduit === k ? NAVY  : MUTED,
+                  borderBottom: ongletProduit === k
+                    ? `2.5px solid ${GOLD}` : '2.5px solid transparent',
+                  fontWeight:   ongletProduit === k ? 700 : 400,
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
           <h2 style={{ margin: 0, fontSize: 18, color: '#1B2D5B' }}>
             {isEdit ? 'Modifier le produit' : 'Nouveau produit'}
           </h2>
@@ -245,6 +261,7 @@ function ProduitModal({ categories, produit, onClose, onSave }) {
         </div>
 
         <div style={ms.modalBody}>
+          {ongletProduit === 'infos' && (
           <form onSubmit={handleSubmit} noValidate>
 
             {/* Nom + Description */}
@@ -352,6 +369,10 @@ function ProduitModal({ categories, produit, onClose, onSave }) {
             </div>
 
           </form>
+          )}
+          {ongletProduit === 'prix' && produit?.id && (
+            <HistoriquePrixOnglet produitId={produit.id} />
+          )}
         </div>
       </div>
     </div>
@@ -359,6 +380,10 @@ function ProduitModal({ categories, produit, onClose, onSave }) {
 }
 
 const ms = {
+tabs: { display: 'flex', borderBottom: `1px solid ${BORDER}`, marginBottom: 16 },
+tab:  { background: 'none', border: 'none', padding: '10px 16px',
+        cursor: 'pointer', fontSize: 13, transition: 'all 0.15s',
+        borderBottom: '2.5px solid transparent' },
   btnGenerer:  { backgroundColor: '#1B2D5B', color: '#fff', border: 'none',
                padding: '9px 14px', borderRadius: 8, cursor: 'pointer',
                fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' },

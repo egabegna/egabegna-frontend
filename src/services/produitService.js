@@ -18,6 +18,10 @@ const produitService = {
   getMouvements: (params={}) => api.get('/api/stock/mouvements/', { params }),
   ajusterStock:  (data)      => api.post('/api/stock/ajuster/', data),
   genererCodeBarres: (id) => api.post(`/api/produits/${id}/generer-code-barres/`),
+
+  // Statistiques
+  historiquePrix: (id) => api.get(`/api/produits/${id}/historique-prix/`),
+  analysePrix:    (id) => api.get(`/api/produits/${id}/analyse-prix/`),
 }
 
 export default produitService
