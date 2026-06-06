@@ -27,7 +27,6 @@ const GROUPES_PROPRIETAIRE = [
     liens: [
       { path: '/produits',   label: 'Produits',    Icon: Package },
       { path: '/categories', label: 'Catégories',  Icon: Tag },
-      { path: '/receptions', label: 'Réceptions',  Icon: PackageCheck },
     ]
   },
   {
@@ -42,6 +41,9 @@ const GROUPES_PROPRIETAIRE = [
     label: 'Achats',
     liens: [
       { path: '/fournisseurs', label: 'Fournisseurs', Icon: Truck },
+      { path: '/commandes', label: 'Commandes', Icon: Package },
+      { path: '/receptions', label: 'Réceptions',  Icon: PackageCheck },
+
     ]
   },
   {

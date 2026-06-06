@@ -33,6 +33,8 @@ import ParametresPage   from './pages/ParametresPage'
 import ProfilPage        from './pages/ProfilPage'
 import ConfirmerEmailPage from './pages/ConfirmerEmailPage'
 import ClientsPage from './pages/ClientsPage'
+import CommandesPage from './pages/CommandesPage'
+
 
 // Pages superadmin
 import SuperadminLoginPage          from './pages/superadmin/SuperadminLoginPage'
@@ -79,6 +81,7 @@ function AppRoutes() {
       <Route path="/categories"   element={<ProtectedWithLayout><CategoriesPage /></ProtectedWithLayout>} />
       <Route path="/employes"     element={<ProtectedWithLayout><EmployesPage /></ProtectedWithLayout>} />
       <Route path="/fournisseurs" element={<ProtectedWithLayout><FournisseursPage /></ProtectedWithLayout>} />
+      <Route path="/commandes"    element={<ProtectedWithLayout><CommandesPage /></ProtectedWithLayout>} />
       <Route path="/receptions"   element={<ProtectedWithLayout><ReceptionsPage /></ProtectedWithLayout>} />
       <Route path="/ambulant"     element={<ProtectedWithLayout><AmbulantPage /></ProtectedWithLayout>} />
       <Route path="/finances"     element={<ProtectedWithLayout><FinancesPage /></ProtectedWithLayout>} />
